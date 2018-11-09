@@ -1,0 +1,79 @@
+# This replaces the "auth.istio.io/8080: MUTUAL_TLS|NONE" service annotation
+apiVersion: "authentication.istio.io/v1alpha1"
+kind: "Policy"
+metadata:
+  name: fortiotls
+spec:
+  peers:
+  - mtls: {}
+  peer_is_optional: true
+  targets:
+  # Must be short name of service
+  - name: fortiotls
+    # subsets: "v2"
+    ports:
+    # name also supported
+    # TODO: this should be target port (container)
+    - number: 8080
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: fortiotls
+spec:
+  host:  fortiotls
+  trafficPolicy:
+    tls:
+      # Equivalent with ISTIO_MUTUAL
+      mode: MUTUAL
+      client_certificate: /etc/certs/cert-chain.pem
+      private_key: /etc/certs/key.pem
+      ca_certificates: /etc/certs/root-cert.pem
+      subject_alt_names:
+      - spiffe://cluster.local/ns/test/sa/default
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fortiotls
+spec:
+  ports:
+  - port: 8080
+    name: http-echo
+  - port: 8079
+    name: grpc-ping
+  selector:
+    app: fortiotls
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: fortiotls
+spec:
+  replicas: 2
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/discoveryAddress: "istio-pilot.{{ .Values.pilotns }}:15010"
+      labels:
+        app: fortiotls
+        version: tls
+    spec:
+      containers:
+      - name: fortio
+        image: {{ .Values.fortioImage | default "istio/fortio:1.0.1" }}
+        ports:
+         - containerPort: 8080
+         - containerPort: 8079
+        args:
+          - server
+        resources:
+          requests:
+            cpu: 800m
+            memory: "1G"
+          limits:
+            cpu: 1000m
+            memory: "1G"
+
