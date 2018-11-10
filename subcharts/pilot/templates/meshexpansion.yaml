@@ -57,7 +57,7 @@ spec:
   - meshexpansion-gateway
   tcp:
   - match:
-    - port: 15011
+    - port: {{ .Values.externalPort }}
     route:
     - destination:
         host: istio-pilot.{{ $.Release.Namespace }}.svc.cluster.local

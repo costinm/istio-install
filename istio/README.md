@@ -4,20 +4,23 @@
 
 ## Introduction
 
-This chart bootstraps all istio [components](https://istio.io/docs/concepts/what-is-istio/overview.html) deployment on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+This chart bootstraps core istio [components](https://istio.io/docs/concepts/what-is-istio/overview.html) deployment on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+
+For a new installation, this is the first component that needs to be installed. 
+
+For migrating to the new version, you must start with migrating the ingress and certificates, 
+to avoid traffic loss.
 
 ## Chart Details
 
-This chart can install multiple istio components as subcharts:
-- ingress
-- ingressgateway
-- egressgateway
+This will install the core CRDs and resources used by istio.
+
+This chart can install multiple istio components as subcharts. We are in process of moving
+them to standalone namespaces and charts:
 - sidecarInjectorWebhook
 - galley
 - mixer
-- pilot
 - security(citadel)
-- grafana
 - prometheus
 - servicegraph
 - tracing(jaeger)

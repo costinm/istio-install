@@ -47,3 +47,11 @@ dashboardProviders:
       disableDeletion: false
       options:
         path: /var/lib/grafana/dashboards/istio
+
+global:
+  hub: gcr.io/istio-release
+  tag: master-latest-daily
+  arch:
+    amd64: 2
+    s390x: 2
+    ppc64le: 2

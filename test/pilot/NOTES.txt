@@ -1,7 +1,0 @@
-Installing standalone Pilot.
-
-```
-  helm install -n pilot103 --namespace pilot103 helm/pilot/  --set global.hub=istio --set global.tag=103
-  helm install -n pilot102 --namespace pilot102 helm/pilot/  --set global.hub=istio --set global.tag=102
-
-```

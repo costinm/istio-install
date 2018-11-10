@@ -8,6 +8,7 @@ spec:
   selector:
     istio: ingressgateway
   servers:
+{{- if .Values.tls }}
   - port:
       number: 443
       name: https-default
@@ -18,6 +19,7 @@ spec:
       privateKey: /etc/istio/ingressgateway-certs/tls.key
     hosts:
     - "*"
+{{- end }}
   - port:
       number: 80
       name: http

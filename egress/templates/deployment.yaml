@@ -1,48 +1,42 @@
-{{- range $key, $spec := .Values }}
-{{- if and (ne $key "enabled") }}
-{{- if $spec.enabled }}
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: {{ $key }}
-  namespace: {{ $spec.namespace | default $.Release.Namespace }}
+  name: egressgateway
+  namespace: {{ .Release.Namespace }}
   labels:
-    chart: {{ template "gateway.chart" $ }}
-    heritage: {{ $.Release.Service }}
-    release: {{ $.Release.Name }}
-    {{- range $key, $val := $spec.labels }}
-    {{ $key }}: {{ $val }}
-    {{- end }}
+    app: egressgateway
+    chart: egressgateway
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+    istio: {{ .Release.Namespace }}
 spec:
-  replicas: {{ $spec.replicaCount }}
+  replicas: {{ .Values.replicaCount }}
   template:
     metadata:
       labels:
-        chart: {{ template "gateway.chart" $ }}
+        chart: egressgateway
         heritage: {{ $.Release.Service }}
         release: {{ $.Release.Name }}
         version: {{ $.Chart.Version }}
-        {{- range $key, $val := $spec.labels }}
-        {{ $key }}: {{ $val }}
-        {{- end }}
+        app: egressgateway
+        istio: {{ .Release.Namespace }}
       annotations:
         sidecar.istio.io/inject: "false"
         scheduler.alpha.kubernetes.io/critical-pod: ""
-{{- if $spec.podAnnotations }}
-{{ toYaml $spec.podAnnotations | indent 8 }}
+{{- if .Values.podAnnotations }}
+{{ toYaml .Values.podAnnotations | indent 8 }}
 {{ end }}
     spec:
-      serviceAccountName: {{ $key }}-service-account
-{{- if $.Values.global.priorityClassName }}
-      priorityClassName: "{{ $.Values.global.priorityClassName }}"
+{{- if .Values.global.priorityClassName }}
+      priorityClassName: "{{ .Values.global.priorityClassName }}"
 {{- end }}
-{{- if $.Values.global.proxy.enableCoreDump }}
+{{- if .Values.global.proxy.enableCoreDump }}
       initContainers:
         - name: enable-core-dump
-{{- if contains "/" $.Values.global.proxy_init.image }}
-          image: "{{ $.Values.global.proxy_init.image }}"
+{{- if contains "/" .Values.global.proxy_init.image }}
+          image: "{{ .Values.global.proxy_init.image }}"
 {{- else }}
-          image: "{{ $.Values.global.hub }}/{{ $.Values.global.proxy_init.image }}:{{ $.Values.global.tag }}"
+          image: "{{ .Values.global.hub }}/{{ .Values.global.proxy_init.image | default "proxy_init" }}:{{ .Values.global.tag }}"
 {{- end }}
           imagePullPolicy: IfNotPresent
           command:
@@ -55,14 +49,17 @@ spec:
 {{- end }}
       containers:
         - name: istio-proxy
-{{- if contains "/" $.Values.global.proxy.image }}
-          image: "{{ $.Values.global.proxy.image }}"
+{{- if contains "/" .Values.global.proxy.image }}
+          image: "{{ .Values.global.proxy.image }}"
 {{- else }}
-          image: "{{ $.Values.global.hub }}/{{ $.Values.global.proxy.image }}:{{ $.Values.global.tag }}"
+          image: "{{ .Values.global.hub }}/{{ .Values.global.proxy.image }}:{{ .Values.global.tag }}"
 {{- end }}
-          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "Always" }}
           ports:
-            {{- range $key, $val := $spec.ports }}
+            {{- range $key, $val := .Values.ports }}
+            - containerPort: {{ $val.port }}
+            {{- end }}
+            {{- range $key, $val := .Values.meshExpansionPorts }}
             - containerPort: {{ $val.port }}
             {{- end }}
             - containerPort: 15090
@@ -71,40 +68,36 @@ spec:
           args:
           - proxy
           - router
-{{- if $.Values.global.proxy.proxyDomain }}
+{{- if .Values.global.proxy.proxyDomain }}
           - --domain
-          - {{ $.Values.global.proxy.proxyDomain }}
+          - {{ .Values.global.proxy.proxyDomain }}
 {{- end }}
           - --log_output_level
-          - 'info'
+          - '{{ .Values.debug | default "info" }}'
           - --drainDuration
-          - '45s' #drainDuration
+          - '{{ .Values.drainDuration }}' #drainDuration
           - --parentShutdownDuration
           - '1m0s' #parentShutdownDuration
           - --connectTimeout
-          - '10s' #connectTimeout
+          - '{{ .Values.drainDuration }}' #connectTimeout
           - --serviceCluster
-          - {{ $key }}
+          - egressgateway{{ .Values.suffix | default "" }}
           - --zipkinAddress
-        {{- if $.Values.global.tracer.zipkin.address }}
-          - {{ $.Values.global.tracer.zipkin.address }}
-        {{- else if $.Values.global.istioNamespace }}
-          - zipkin.{{ $.Values.global.istioNamespace }}:9411
+        {{- if .Values.global.tracer.zipkin.address }}
+          - {{ .Values.global.tracer.zipkin.address }}
+        {{- else if .Values.global.istioNamespace }}
+          - zipkin.{{ .Values.global.istioNamespace }}:9411
         {{- else }}
           - zipkin:9411
         {{- end }}
-        {{- if $.Values.global.proxy.envoyStatsd.enabled }}
-          - --statsdUdpAddress
-          - {{ $.Values.global.proxy.envoyStatsd.host }}:{{ $.Values.global.proxy.envoyStatsd.port }}
-        {{- end }}
           - --proxyAdminPort
           - "15000"
-        {{- if $.Values.global.controlPlaneSecurityEnabled }}
+        {{- if .Values.global.controlPlaneSecurityEnabled }}
           - --controlPlaneAuthPolicy
           - MUTUAL_TLS
           - --discoveryAddress
-          {{- if $.Values.global.istioNamespace }}
-          - istio-pilot.{{ $.Values.global.istioNamespace }}:15011
+          {{- if .Values.global.istioNamespace }}
+          - istio-pilot.{{ .Values.global.istioNamespace }}:15011
           {{- else }}
           - istio-pilot:15011
           {{- end }}
@@ -112,17 +105,17 @@ spec:
           - --controlPlaneAuthPolicy
           - NONE
           - --discoveryAddress
-          {{- if $.Values.global.istioNamespace }}
-          - istio-pilot.{{ $.Values.global.istioNamespace }}:15010
+          {{- if .Values.global.istioNamespace }}
+          - istio-pilot.{{ .Values.global.istioNamespace }}:15010
           {{- else }}
           - istio-pilot:15010
           {{- end }}
         {{- end }}
           resources:
-{{- if $spec.resources }}
-{{ toYaml $spec.resources | indent 12 }}
+{{- if .Values.resources }}
+{{ toYaml .Values.resources | indent 12 }}
 {{- else }}
-{{ toYaml $.Values.global.defaultResources | indent 12 }}
+{{ toYaml .Values.global.defaultResources | indent 12 }}
 {{- end }}
           env:
           - name: POD_NAME
@@ -144,55 +137,52 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name             
-          {{- if $spec.env }}
-          {{- range $key, $val := $spec.env }}
+          {{- if .Values.env }}
+          {{- range $key, $val := .Values.env }}
           - name: {{ $key }}
             value: {{ $val }}
           {{- end }}
           {{ end }}
           volumeMounts:
-          {{ if $.Values.global.sds.enabled }}
+          {{ if .Values.global.sds.enabled }}
           - name: sdsudspath
             mountPath: /var/run/sds
           {{- end }}
           - name: istio-certs
             mountPath: /etc/certs
             readOnly: true
-          {{- range $spec.secretVolumes }}
+          {{- range .Values.secretVolumes }}
           - name: {{ .name }}
             mountPath: {{ .mountPath | quote }}
             readOnly: true
           {{- end }}
-{{- if $spec.additionalContainers }}
-{{ toYaml $spec.additionalContainers | indent 8 }}
+{{- if .Values.additionalContainers }}
+{{ toYaml .Values.additionalContainers | indent 8 }}
 {{- end }}
       volumes:
-      {{ if $.Values.global.sds.enabled }}
+      {{ if .Values.global.sds.enabled }}
       - name: sdsudspath
         hostPath:
           path: /var/run/sds
       {{- end }}
       - name: istio-certs
         secret:
-          secretName: istio.{{ $key }}-service-account
+          secretName: istio.default-service-account
           optional: true
-      {{- range $spec.secretVolumes }}
+      {{- range .Values.secretVolumes }}
       - name: {{ .name }}
         secret:
           secretName: {{ .secretName | quote }}
           optional: true
       {{- end }}
-      {{- range $spec.configVolumes }}
+      {{- range .Values.configVolumes }}
       - name: {{ .name }}
         configMap:
           name: {{ .configMapName | quote }}
           optional: true
       {{- end }}
-{{- if $.Values.global.arch }}}
+{{- if .Values.global.arch }}}
       affinity:
       {{- include "nodeaffinity" $ | indent 6 }}
 {{- end }}
 ---
-{{- end }}
-{{- end }}
-{{- end }}

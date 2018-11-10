@@ -1,0 +1,130 @@
+# Standalone istio egress gateway.
+# Should be installed in a separate namespace, to minimize access to secrets.
+
+#externalTrafficPolicy: Local #change to Local to preserve source IP or Cluster for default behaviour or leave commented out
+ports:
+## You can add custom gateway ports
+- port: 80
+  targetPort: 80
+  name: http2
+- port: 443
+  name: https
+# Example of a port to add. Remove if not needed
+- port: 31400
+  name: tcp
+### PORTS FOR UI/metrics #####
+## Disable if not needed
+- port: 15029
+  targetPort: 15029
+  name: http-kiali
+- port: 15030
+  targetPort: 15030
+  name: http2-prometheus
+- port: 15031
+  targetPort: 15031
+  name: http2-grafana
+- port: 15032
+  targetPort: 15032
+  name: http2-tracing
+  # This is the port where sni routing happens
+- port: 15443
+  targetPort: 15443
+  name: tls
+
+# Scalability tunning
+replicaCount: 1
+autoscaleMin: 1
+autoscaleMax: 5
+resources: {}
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  #requests:
+  #  cpu: 1800m
+  #  memory: 256Mi
+cpu:
+  targetAverageUtilization: 80
+
+# Debug level for envoy. Can be set to 'debug'
+debug: info
+
+drainDuration: 45s
+connectTimeout: 10s
+
+loadBalancerIP: ""
+loadBalancerSourceRanges: []
+serviceAnnotations: {}
+
+# Enable cross-cluster access using SNI matching
+zvpn: true
+
+# To generate an internal load balancer:
+# --set serviceAnnotations.cloud.google.com/load-balancer-type=internal
+#serviceAnnotations:
+#    cloud.google.com/load-balancer-type: "internal"
+
+podAnnotations: {}
+type: LoadBalancer #change to NodePort, ClusterIP or LoadBalancer if need be
+
+#### MESH EXPANSION PORTS  ########
+# Pilot and Citadel MTLS ports are enabled in gateway - but will only redirect
+# to pilot/citadel if global.meshExpansion settings are enabled.
+# Delete these ports if mesh expansion is not enabled, to avoid
+# exposing unnecessary ports on the web.
+# You can remove these ports if you are not using mesh expansion
+meshExpansionPorts:
+- port: 15011
+  targetPort: 15011
+  name: tcp-pilot-grpc-tls
+- port: 8060
+  targetPort: 8060
+  name: tcp-citadel-grpc-tls
+- port: 853
+  targetPort: 853
+  name: tcp-dns-tls
+####### end MESH EXPANSION PORTS ######
+
+##############
+secretVolumes:
+- name: ingressgateway-certs
+  secretName: istio-ingressgateway-certs
+  mountPath: /etc/istio/ingressgateway-certs
+- name: ingressgateway-ca-certs
+  secretName: istio-ingressgateway-ca-certs
+  mountPath: /etc/istio/ingressgateway-ca-certs
+
+### Advanced options ############
+env:
+  # A gateway with this mode ensures that pilot generates an additional
+  # set of clusters for internal services but without Istio mTLS, to
+  # enable cross cluster routing.
+  ISTIO_META_ROUTER_MODE: "sni-dnat"
+
+
+# Local install
+global:
+  # Default tag for Istio images.
+  hub: gcr.io/istio-release
+  #tag: master-latest-daily
+  #tag: release-1.0-latest-daily
+  tag: release-1.1-latest-daily
+
+  # Used to locate istio-pilot and validate its certificte.
+  # The new chart is defaulting to an isolated pilot
+  istioNamespace: istio-pilot11
+
+  meshExpansion:
+    enabled: true
+  k8sIngress:
+    enabled: false
+  multiCluster:
+    connectUsingGateway: true
+  sds:
+    enabled: false
+  proxy:
+    enableCoreDump: false
+    image: proxyv2
+
+  tracer:
+    zipkin:
+      address: zipkin.istio-system:9411

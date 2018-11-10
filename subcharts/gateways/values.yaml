@@ -5,6 +5,7 @@
 # and that NodePorts are not conflicting.
 # Disable specifc gateway by setting the `enabled` to false.
 #
+
 enabled: true
 
 istio-ingressgateway:
@@ -35,14 +36,11 @@ istio-ingressgateway:
   - port: 80
     targetPort: 80
     name: http2
-    nodePort: 31380
   - port: 443
     name: https
-    nodePort: 31390
   # Example of a port to add. Remove if not needed
   - port: 31400
     name: tcp
-    nodePort: 31400
   ### PORTS FOR UI/metrics #####
   ## Disable if not needed
   - port: 15029
@@ -185,7 +183,26 @@ istio-ilbgateway:
 
 # Local install
 global:
-  hub: ""
-  tag: ""
-  mesh:
+  hub: gcr.io/istio-release
+
+  # Default tag for Istio images.
+  tag: master-latest-daily
+  # Used to locate istio-pilot
+  istioNamespace: istio-system
+  meshExpansion:
     enabled: true
+  k8sIngress:
+    enabled: false
+  multiCluster:
+    connectUsingGateway: true
+  sds:
+    enabled: false
+  proxy:
+    enableCoreDump: false
+    image: proxyv2
+    envoyStatsd:
+      enabled: false
+
+  tracer:
+    zipkin:
+      address: zipkin.istio-system:9411

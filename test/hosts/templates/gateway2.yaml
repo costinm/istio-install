@@ -1,5 +1,6 @@
 # Gateway config, and associated virtual services
 
+{{- if .Values.tls }}
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -29,3 +30,4 @@ spec:
     hosts:
     - fortionoistio.{{ .Values.domain }}
     - fortionoistio1.{{ .Values.domain }}
+{{- end }}

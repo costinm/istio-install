@@ -1,6 +1,0 @@
-# When using helm < 2.10, add this file with
-# -values values-helm29.yaml
-
-global:
-  crds: false
-  imagePullPolicy: Always

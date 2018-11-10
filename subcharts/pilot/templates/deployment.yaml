@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   # TODO: default template doesn't have this, which one is right ?
   labels:
-    app: {{ template "pilot.name" . }}
+    app: pilot
     chart: {{ template "pilot.chart" . }}
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
@@ -21,7 +21,7 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ template "pilot.name" . }}
+        app: pilot
         chart: {{ template "pilot.chart" . }}
         heritage: {{ .Release.Service }}
         release: {{ .Release.Name }}
@@ -40,9 +40,9 @@ spec:
 {{- if contains "/" .Values.image }}
           image: "{{ .Values.image }}"
 {{- else }}
-          image: "{{ .Values.global.hub }}/{{ .Values.image }}:{{ .Values.global.tag }}"
+          image: "{{ .Values.global.hub | default "gcr.io/istio-release" }}/{{ .Values.image | default "pilot" }}:{{ .Values.global.tag | default "master-latest-daily" }}"
 {{- end }}
-          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy | default "Always" }}
           args:
           - "discovery"
 {{- if $.Values.global.proxy.discoveryDomain }}
@@ -112,8 +112,10 @@ spec:
           volumeMounts:
           - name: config-volume
             mountPath: /etc/istio/config
+            optional: true
           - name: config-networks-volume
             mountPath: /etc/istio/config-networks
+            optional: true
           - name: istio-certs
             mountPath: /etc/certs
             readOnly: true
@@ -122,7 +124,7 @@ spec:
 {{- if contains "/" .Values.global.proxy.image }}
           image: "{{ .Values.global.proxy.image }}"
 {{- else }}
-          image: "{{ .Values.global.hub }}/{{ .Values.global.proxy.image }}:{{ .Values.global.tag }}"
+          image: "{{ .Values.global.hub | default "gcr.io/istio-release" }}/{{ .Values.global.proxy.image | default "proxyv2" }}:{{ .Values.global.tag | default "master-latest-daily" }}"
 {{- end }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           ports:
@@ -186,4 +188,6 @@ spec:
           secretName: istio.istio-pilot-service-account
           optional: true
       affinity:
+{{- if .Values.nodeaffinity }}
       {{- include "nodeaffinity" . | indent 6 }}
+{{- end }}
