@@ -2,23 +2,57 @@
 
 Fork of istio helm templates, with additional modularity.
 
-## Separate namespaces
+Each module should be installed in separate namespaces, to improve security and 
+reduce upgrade risks. This allows testing a new configuration or version 
+before rolling it out to all pods.
 
-Each component should be installed in separate namespaces, to improve security and 
-reduce upgrade risks.
+Except istio-system, all modules support multiple 'profiles' (prod, canary, v10, vnext,
+etc). Each profile is implemneted using a separae, isolated namespace - the admin
+of 'prod' can be different than the admin of 'experiments'.
 
-With few exceptions - citadel CA, k8s ingress - it is possible to run each component
-in multiple namespaces, with possibly different versions or settings. 
+The profile is selected by labeling the namespace or pod annotations.
 
-This allows testing a new configuration or version before rolling it out to all pods.
+Major components:
 
-Pods can use a particular configuration in 2 ways:
+1. istio-system - will be left with only CRDs and possibly citadel (master secret).
+Singleton.
+
+1. istio-control-$PROFILE - pilot, possibly sidecar injector
+ 
+1. istio-config - galley
+
+1. istio-telemetry-$PROFILE - mixer telemetry, possibly prometheus
+
+1. istio-policy-$PROFILE - mixer policy.
+
+1. istio-ingress-$PROFILE - each ingress gateway will handle one or more IPs and
+hosts, their certificates and control the routing for its domains to app namespaces.
+
+1. istio-egress-$PROFILE - install if you want all outgoing traffic to be controlled.
+When namespace isolation is available, different apps can use different egress
+gateways.
+
+TODO: should sidecar injector be in istio-control ? istio-control or istio-pilot ?
+
+Each component's profile should work with versions +1 or -1, to allow gradual and 
+by-component upgrade or rollback. For example 1.1 pilot will work with both 1.0.3
+and 1.2 sidecars and gateways.
+
+Pods can use a particular profile:
+- selecting them using namespace labels, which allows a specific injector profile to
+be used
+- using different configs with kube-inject
 - using an explicit annotation on the pod, to select a specific pilot
-- by deploying separate sidecar injectors, and selecting them using namespace labels.
+- TODO: cni plugin should also support this.
 
-## New install
+## Installing istio-system
 
-A new install will start with deploying the core components in istio-system.
+You can migrate from Istio 1.0.x to the new modular install, or start fresh.
+Current focus is on the smooth migration experience, until the 'fresh install'
+is ready I recommend starting with Istio 1.0.x or 1.1 install in istio-system.
+
+IN PROGRESS: A new install will start with deploying the core components in istio-system.
+This will include the CRDs and (optional) citadel.
 
 ```
 cd istio
@@ -29,30 +63,45 @@ cd ..
 ```
 
 Next step is to follow the 'gradual install' steps to add the components you want.
-Note that installing istio-system includes some of the components that are not yet
-migrated to separate namespace/installs: galley, mixer and prometheus, citadel. 
 
-## Gradual install / migration
-
-For a gradual install of the new version: start with installing Istio 1.0.x
-If you already have 1.0.x installed - keep it in place while following the next steps.
 
 ### Control Plane - pilot
 
 Install:
 
 ```
+helm install -n istio-pilot11 --namespace istio-pilot11 pilot \
+   --set global.tag=release-1.1-latest-daily 
 
 # Install other pilot versions for canarying and testing
-helm install -n istio-pilot10 --namespace istio-pilot10 subcharts/pilot \
-  --set global.tag=release-1.0-latest-daily
-helm install -n istio-pilot11 --namespace istio-pilot11 subcharts/pilot \
-   --set global.tag=release-1.1-latest-daily \
+helm install -n istio-pilot10 --namespace istio-pilot10 pilot \
+  --set global.tag=release-1.0-latest-daily \
    --set externalPort=14011
-helm install -n istio-pilot12 --namespace istio-pilot11 subcharts/pilot --set global.tag=master-latest-daily \
+ 
+# You can also install a pilot from master, or with different set of settings 
+helm install -n istio-pilot12 --namespace istio-pilot12 pilot \
+   --set global.tag=master-latest-daily \
    --set externalPort=16011
+```
+
+Each pod will select the pilot to use for configuration using annotation, auto-injection
+or kube-inject flags.
+
+### Sidecar injector
+
+It is now possible to have multiple sidecar injectors, each with a different setup.
+To select which injector to use, specify a label on the namespace:
+
+```bash
 
 ```
+
+TODO: how to set a default injector, exclude from default (tweak the config)
+
+Note that the 'mesh config' associated with the injector is part of the injector config map.
+
+
+### Ingress gateways 
 
 Installing gateways:
 
@@ -62,9 +111,6 @@ Installing gateways:
 helm install --namespace istio-ingress -n \
   istio-ingress ingress 
 
-helm install --namespace istio-egress -n \
-  istio-egress 
-
 # A gateway using Istio 1.0 pilot (for testing)
 helm install --namespace istio-ingress-10 -n istio-ingress-10 ingress \
    --set global.tag=release-1.0-latest-daily \
@@ -73,6 +119,31 @@ helm install --namespace istio-ingress-10 -n istio-ingress-10 ingress \
 ```
 
 Upgrade using same settings with ```helm upgrade NAME subcharts/pilot ...```
+
+### Egress gatways
+
+If you want to route outbound traffic trough an egress gateway, you need to install it
+and optionally prevent pods from direct access to external addresses using TrafficPolicy.
+
+The egress is also currently required for zero vpn. 
+
+```bash
+
+helm install --namespace istio-egress -n \
+  istio-egress 
+
+```
+
+You can install multiple egress-es, using different namespaces. Note that for each additional
+egress you must define a different suffix for zvpn.
+
+```bash
+
+helm install --namespace istio-egress-test -n \
+  istio-egress-test --set suffix=test --set debug=debug
+
+```
+
 
 ## Other components
 

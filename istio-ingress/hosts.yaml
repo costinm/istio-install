@@ -1,0 +1,27 @@
+# Additional hosts and ports to add to the gateway
+# Configure using --values myhosts.yaml
+
+# This file can be used to expose Istio internal components - you should
+# create your own file, with the specific list of ports to expose.
+
+# All certificates for TLS are expected to be present in the 'certs' secret,
+# matching the hostname.
+
+# TODO: support a wildcard cert
+# wildcardCert: example.com
+
+domain: example.com
+
+tcp:
+- port: 8000
+  name: tcp-iperf3
+
+hosts:
+- name: prom
+- name: grafana
+- name: trace
+- name: pilot11
+- name: pilot10
+- name: fortio10
+- name: fortio11
+- name: fortiotls

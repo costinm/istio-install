@@ -1,0 +1,59 @@
+#
+# pilot configuration
+#
+enabled: true
+replicaCount: 1
+autoscaleMin: 1
+autoscaleMax: 5
+image: pilot
+sidecar: false
+traceSampling: 100.0
+# Resources for a small pilot install
+resources:
+  requests:
+    cpu: 500m
+    memory: 2048Mi
+env:
+  GODEBUG: gctrace=2
+cpu:
+  targetAverageUtilization: 80
+
+# External port is exposed on the gateway.
+externalPort: 15011
+
+
+#### Used only in standalone mode
+#### mixer and ingress are used for creating the config map - which is
+#### only created in standalone mode
+mixer:
+  # Will not define mixerCheckServer and mixerReportServer
+  enabled: false
+# Don't attempt to set ingress
+ingress:
+  enabled: false
+
+# Only used if installing pilot standalone. When imported, the global from istio
+# is used.
+global:
+  hub: gcr.io/istio-release
+  tag: release-1.1-latest-daily
+  disablePolicyChecks: true
+  enableTracing: false
+  accessLogFile: /dev/null
+  controlPlaneSecurityEnabled: true
+  policyCheckFailOpen: true
+  k8sIngressSelector: ingress
+  configMap: true
+  meshExpansion:
+    enabled: true
+  proxy:
+    resources: {}
+    tracer: "none"
+    concurrency: 4
+  # SDS enabled. IF set to true, mTLS certificates for the sidecars will be
+  # distributed through the SecretDiscoveryService instead of using K8S secrets to mount the certificates.
+  sds:
+    enabled: false
+    udsPath: ""
+    enableTokenMount: false
+
