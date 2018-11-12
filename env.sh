@@ -1,13 +1,17 @@
 #!/usr/bin/env bash
 
+# Upgrade all components
 function upgrade_all() {
-    helm_all upgrade
+    _helm_all upgrade
 }
 
+# Install all components (including canaries)
 function install_all() {
-    helm_all install
+    _helm_all install
 }
 
+# Run install or upgrade helm.
+# The namespace will match the deployment name.
 function helm_cmd() {
     local upg=$1
     shift
@@ -18,30 +22,35 @@ function helm_cmd() {
 
     if [ "$upg" == "upgrade" ] ; then
         helm upgrade $n $* --set debug=debug
+    elif [ "$upg" == "delete" ] ; then
+        helm delete --purge $n
+        kubectl delete ns $n
     else
         helm install --namespace $n -n $n $*
     fi
-
 }
 
-function helm_all() {
+# Components to install
+function _helm_all() {
+    # upgrade or install or delete
     local upg=$1
     shift
 
-    helm_cmd $upg istio-egress egress $*
-    helm_cmd $upg istio-egresstest egress --set global.tag=master-latest-daily \
+    helm_cmd $upg istio-pilot11 istio-control $*
+    helm_cmd $upg istio-pilot10 istio-control --set global.tag=release-1.0-latest-daily $*
+
+    helm_cmd $upg istio-egress istio-egress $*
+    helm_cmd $upg istio-egresstest istio-egress --set global.tag=master-latest-daily \
         --set zvpn.suffix=v10.webinf.info $*
 
-    helm_cmd $upg istio-ingress ingress $*
-    helm_cmd $upg istio-ingress-10 ingress --set global.tag=release-1.0-latest-daily --set global.istioNamespace=istio-pilot10  \
+    helm_cmd $upg istio-ingress istio-ingress $*
+    helm_cmd $upg istio-ingress-10 istio-ingress --set global.tag=release-1.0-latest-daily --set global.istioNamespace=istio-pilot10  \
         --set zvpn.enabled=false $*
     #helm_cmd $upg istio-ingress-12 --set global.tag=master-latest-daily \
     #    --set zvpn.suffix=v10.webinf.info $*
 
-    helm_cmd $upg grafana grafana $*
+    helm_cmd $upg istio-telemetry istio-telemetry $*
 
-    helm_cmd $upg istio-pilot11 pilot $*
-    helm_cmd $upg istio-pilot10 pilot --set global.tag=release-1.0-latest-daily $*
 
 }
 

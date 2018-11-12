@@ -6,9 +6,6 @@ metadata:
   # TODO: default template doesn't have this, which one is right ?
   labels:
     app: pilot
-    chart: {{ template "pilot.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
     istio: pilot
   annotations:
     checksum/config-volume: {{ template "istio.configmap.checksum" . }}
@@ -22,10 +19,6 @@ spec:
     metadata:
       labels:
         app: pilot
-        chart: {{ template "pilot.chart" . }}
-        heritage: {{ .Release.Service }}
-        release: {{ .Release.Name }}
-        version: {{ .Chart.Version }}
         istio: pilot
       annotations:
         sidecar.istio.io/inject: "false"
@@ -113,9 +106,6 @@ spec:
           - name: config-volume
             mountPath: /etc/istio/config
             optional: true
-          - name: config-networks-volume
-            mountPath: /etc/istio/config-networks
-            optional: true
           - name: istio-certs
             mountPath: /etc/certs
             readOnly: true
@@ -180,9 +170,6 @@ spec:
       - name: config-volume
         configMap:
           name: istio
-      - name: config-networks-volume
-        configMap:
-          name: istio-networks
       - name: istio-certs
         secret:
           secretName: istio.istio-pilot-service-account

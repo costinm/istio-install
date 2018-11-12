@@ -4,9 +4,6 @@ metadata:
   name: istio-policy
   labels:
     app: istio-policy
-    chart: istio-policy
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
 rules:
 - apiGroups: ["config.istio.io"] # istio CRD watcher
   resources: ["*"]

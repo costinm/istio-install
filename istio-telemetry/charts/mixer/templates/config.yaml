@@ -4,10 +4,7 @@ metadata:
   name: istioproxy
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: istio-telemetry
 spec:
   attributes:
     origin.ip:

@@ -1,6 +1,137 @@
-#
-# mixer configuration
-#
+global:
+  hub: gcr.io/istio-release
+  tag: release-1.1-latest-daily
+  disablePolicyChecks: true
+  enableTracing: false
+  accessLogFile: /dev/null
+  controlPlaneSecurityEnabled: true
+  policyCheckFailOpen: true
+  k8sIngressSelector: ingress
+  configMap: true
+  meshExpansion:
+    enabled: true
+  proxy:
+    image: proxyv2
+
+    # DNS domain suffix for pilot proxy agent. Default value is "${POD_NAMESPACE}.svc.cluster.local".
+    proxyDomain: ""
+
+    # DNS domain suffix for pilot proxy discovery. Default value is "cluster.local".
+    discoveryDomain: ""
+
+    # Resources for the sidecar.
+    resources:
+      requests:
+        cpu: 10m
+      #  memory: 128Mi
+      # limits:
+      #   cpu: 100m
+      #   memory: 128Mi
+
+    # Controls number of Proxy worker threads.
+    # If set to 0 (default), then start worker thread for each CPU thread/core.
+    concurrency: 0
+
+    # Configures the access log for each sidecar. Setting it to an empty string will
+    # disable access log for sidecar.
+    accessLogFile: "/dev/stdout"
+
+    #If set to true, istio-proxy container will have privileged securityContext
+    privileged: false
+
+    # If set, newly injected sidecars will have core dumps enabled.
+    enableCoreDump: false
+
+    # Default port for Pilot agent health checks. A value of 0 will disable health checking.
+    statusPort: 15020
+
+    # The initial delay for readiness probes in seconds.
+    readinessInitialDelaySeconds: 1
+
+    # The period between readiness probes.
+    readinessPeriodSeconds: 2
+
+    # The number of successive failed probes before indicating readiness failure.
+    readinessFailureThreshold: 30
+
+    # istio egress capture whitelist
+    # https://istio.io/docs/tasks/traffic-management/egress.html#calling-external-services-directly
+    # example: includeIPRanges: "172.30.0.0/16,172.20.0.0/16"
+    # would only capture egress traffic on those two IP Ranges, all other outbound traffic would
+    # be allowed by the sidecar
+    includeIPRanges: "*"
+    excludeIPRanges: ""
+
+    # istio ingress capture whitelist
+    # examples:
+    #     Redirect no inbound traffic to Envoy:    --includeInboundPorts=""
+    #     Redirect all inbound traffic to Envoy:   --includeInboundPorts="*"
+    #     Redirect only selected ports:            --includeInboundPorts="80,8080"
+    includeInboundPorts: "*"
+    excludeInboundPorts: ""
+
+    # This controls the 'policy' in the sidecar injector.
+    autoInject: enabled
+
+    # Sets the destination Statsd in envoy (the value of the "--statsdUdpAddress" proxy argument
+    # would be <host>:<port>).
+    # Disabled by default.
+    # The istio-statsd-prom-bridge is deprecated and should not be used moving forward.
+    envoyStatsd:
+      # If enabled is set to true, host and port must also be provided. Istio no longer provides a statsd collector.
+      enabled: false
+      host: # example: statsd-svc
+      port: # example: 9125
+
+    # Specify which tracer to use. One of: lightstep, zipkin
+    tracer: "zipkin"
+
+    # Sets an identifier for the remote network to be used for Split Horizon EDS. The network will be sent
+    # to the Pilot when connected by the sidecar and will affect the results returned in EDS requests.
+    # Based on the network identifier Pilot will return all local endpoints + endpoints of gateways to
+    # other networks.
+    # When value is an empty string (default) the Split Horizon EDS won't activate and behave like a
+    # normal EDS (i.e. endpoints from all networks returned).
+    #
+    network: ""
+
+  # SDS enabled. IF set to true, mTLS certificates for the sidecars will be
+  # distributed through the SecretDiscoveryService instead of using K8S secrets to mount the certificates.
+  sds:
+    enabled: false
+    udsPath: ""
+    enableTokenMount: false
+  # Configuration for each of the supported tracers
+  tracer:
+    # Configuration for envoy to send trace data to LightStep.
+    # Disabled by default.
+    # address: the <host>:<port> of the satellite pool
+    # accessToken: required for sending data to the pool
+    # secure: specifies whether data should be sent with TLS
+    # cacertPath: the path to the file containing the cacert to use when verifying TLS. If secure is true, this is
+    #   required. If a value is specified then a secret called "lightstep.cacert" must be created in the destination
+    #   namespace with the key matching the base of the provided cacertPath and the value being the cacert itself.
+    #
+    lightstep:
+      address: ""                # example: lightstep-satellite:443
+      accessToken: ""            # example: abcdefg1234567
+      secure: true               # example: true|false
+      cacertPath: ""             # example: /etc/lightstep/cacert.pem
+    zipkin:
+      # Host:Port for reporting trace data in zipkin format. If not specified, will default to
+      # zipkin service (port 9411) in the same namespace as the other istio components.
+      address: ""
+  # Specify pod scheduling arch(amd64, ppc64le, s390x) and weight as follows:
+  #   0 - Never scheduled
+  #   1 - Least preferred
+  #   2 - No preference
+  #   3 - Most preferred
+  arch:
+    amd64: 2
+    s390x: 2
+    ppc64le: 2
+
+
 image: mixer
 
 env:

@@ -6,9 +6,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-policy
-    chart: istio-policy
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
 spec:
     maxReplicas: {{ .Values.autoscaleMax }}
     minReplicas: {{ .Values.autoscaleMin }}

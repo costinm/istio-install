@@ -11,9 +11,6 @@ dependencies:
   - name: tracing
     version: 1.1.0
     condition: tracing.enabled
-  - name: galley
-    version: 1.1.0
-    condition: galley.enabled
   - name: kiali
     version: 1.1.0
     condition: kiali.enabled

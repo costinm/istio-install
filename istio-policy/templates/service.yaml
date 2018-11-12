@@ -5,9 +5,6 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     app: istio-policy
-    chart: istio-policy
-    heritage: {{ $.Release.Service }}
-    release: {{ $.Release.Name }}
     istio: mixer
 spec:
   ports:
@@ -18,7 +15,6 @@ spec:
   - name: http-monitoring
     port: 9093
   selector:
-    istio: mixer
-    istio-mixer-type: policy
+    app: istio-policy
 ---
 
