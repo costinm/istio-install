@@ -1,3 +1,5 @@
+## Requires citadel istio-sidecar-injector-service-account.istio-env11:istio-sidecar-injector.istio-env11.svc
+
 #
 # sidecar-injector webhook configuration
 #
@@ -7,36 +9,20 @@ enableNamespacesByDefault: false
 istio_cni:
   enabled: false
 
-# Values matching mesh config proto, used during the injection
-# The fields are part of the alpha API, and must be documented and match the proto.
-mesh:
-  defaultConfig:
-    # Where should envoy's configuration be stored in the istio-proxy container
-    configPath: "/etc/istio/proxy"
-    binaryPath: "/usr/local/bin/envoy"
-    #
-    # The mode used to redirect inbound connections to Envoy. This setting
-    # has no effect on outbound traffic: iptables REDIRECT is always used for
-    # outbound connections.
-    # If "REDIRECT", use iptables REDIRECT to NAT and redirect to Envoy.
-    # The "REDIRECT" mode loses source addresses during redirection.
-    # If "TPROXY", use iptables TPROXY to redirect to Envoy.
-    # The "TPROXY" mode preserves both the source and destination IP
-    # addresses and ports, so that they can be used for advanced filtering
-    # and manipulation.
-    # The "TPROXY" mode also configures the sidecar to run with the
-    # CAP_NET_ADMIN capability, which is required to use TPROXY.
-    #interceptionMode: REDIRECT
-
 
 
 # Global contains common fields, used in several Istio components.
 # It is possible for each component to use different a setup profile.
 global:
+  istioNamespace: istio-pilot11
+
   hub: gcr.io/istio-release
   #tag: master-latest-daily
   #tag: release-1.0-latest-daily
   tag: release-1.1-latest-daily
+  # imagePullPolicy is applied to istio control plane components.
+  imagePullPolicy: Always
+
 
   proxy_init:
     # Base name for the proxy_init container, used to configure iptables.
@@ -50,6 +36,17 @@ global:
     enableCoreDump: false
     image: proxyv2
     tracer: zipkin
+    # Default port for Pilot agent health checks. A value of 0 will disable health checking.
+    statusPort: 15020
+
+    # The initial delay for readiness probes in seconds.
+    readinessInitialDelaySeconds: 1
+
+    # The period between readiness probes.
+    readinessPeriodSeconds: 2
+
+    # The number of successive failed probes before indicating readiness failure.
+    readinessFailureThreshold: 30
 
     # DNS domain suffix for pilot proxy agent. Default value is "${POD_NAMESPACE}.svc.cluster.local".
     proxyDomain: ""

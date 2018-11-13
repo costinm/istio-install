@@ -27,10 +27,14 @@ externalPort: 15011
 #### only created in standalone mode
 mixer:
   # Will not define mixerCheckServer and mixerReportServer
-  enabled: false
+  enabled: true
+
 # Don't attempt to set ingress
 ingress:
   enabled: false
+
+telemetryNamespace: istio-telemetry
+policyNamespace: istio-policy
 
 # Only used if installing pilot standalone. When imported, the global from istio
 # is used.
@@ -40,7 +44,7 @@ global:
   disablePolicyChecks: true
   enableTracing: false
   accessLogFile: /dev/null
-  controlPlaneSecurityEnabled: true
+  controlPlaneSecurityEnabled: false
   policyCheckFailOpen: true
   k8sIngressSelector: ingress
   configMap: true

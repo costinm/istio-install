@@ -11,6 +11,8 @@ global:
   # Used to locate istio-pilot and validate its certificte.
   # The new chart is defaulting to an isolated pilot
   istioNamespace: istio-pilot11
+  # imagePullPolicy is applied to istio control plane components.
+  imagePullPolicy: Always
 
   meshExpansion:
     enabled: true
@@ -81,6 +83,8 @@ connectTimeout: 10s
 loadBalancerIP: ""
 loadBalancerSourceRanges: []
 serviceAnnotations: {}
+
+domain: ""
 
 # Enable cross-cluster access using SNI matching
 zvpn:

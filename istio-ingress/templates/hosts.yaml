@@ -1,0 +1,50 @@
+# Defines the hosts supported by this gateway, using values.yaml config
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-gateway
+spec:
+  selector:
+    istio: {{ .Release.Namespace }}
+  servers:
+{{- if .Values.tls }}
+  - port:
+      number: 443
+      name: https-default
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
+      privateKey: /etc/istio/ingressgateway-certs/tls.key
+    hosts:
+    - "*"
+{{- end }}
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+  {{ range $app := .Values.hosts }}
+    - "{{ $app.name }}.{{ $.Values.domain }}"
+  {{- end }}
+
+# TODO: range TCP ports, add ports
+# {{ .Values.domain }}
+{{ range $app := .Values.hosts }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ $app.name }}
+spec:
+  hosts:
+  - "{{ $app.name }}.{{ $.Values.domain }}"
+  gateways:
+  - istio-gateway
+  http:
+  - route:
+    - destination:
+        host: {{ $app.dest }}
+        port:
+          number: {{ $app.port }}
+{{- end }}

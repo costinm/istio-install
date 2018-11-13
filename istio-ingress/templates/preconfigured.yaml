@@ -6,9 +6,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: ingressgateway
-    chart: ingressgateway
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
 spec:
   selector:
     istio: {{ .Release.Namespace }}
@@ -42,9 +39,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: ingressgateway
-    chart: ingressgateway
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
 spec:
   selector:
     istio: {{ .Release.Namespace }}
@@ -72,10 +66,7 @@ metadata:
   name: istio-multicluster-ingressgateway
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "gateway.name" . }}
-    chart: {{ template "gateway.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: ingressgateway
 spec:
   selector:
     istio: {{ .Release.Namespace }}
@@ -94,10 +85,7 @@ metadata:
   name: istio-multicluster-ingressgateway
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "gateway.name" . }}
-    chart: {{ template "gateway.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: ingressgateway
 spec:
   gateways:
   - istio-multicluster-ingressgateway
@@ -121,10 +109,7 @@ metadata:
   name: istio-multicluster-ingressgateway
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "gateway.name" . }}
-    chart: {{ template "gateway.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: ingressgateway
 spec:
    workloadLabels:
      istio: {{ .Release.Namespace }}

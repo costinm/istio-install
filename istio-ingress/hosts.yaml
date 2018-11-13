@@ -17,11 +17,36 @@ tcp:
   name: tcp-iperf3
 
 hosts:
+- name: prom11
+  dest: prometheus.istio-telemetry.svc.cluster.local
+  port: 9090
+
 - name: prom
+  dest: prometheus.istio-system.svc.cluster.local
+  port: 9090
+
 - name: grafana
+  dest: grafana.istio-telemetry.svc.cluster.local
+  port: 3000
+
 - name: trace
+  dest: tracing.istio-system.svc.cluster.local
+  port: 80
+
 - name: pilot11
+  dest: istio-pilot.istio-pilot11.svc.cluster.local
+  port: 8080
+
 - name: pilot10
-- name: fortio10
+  dest: istio-pilot.istio-pilot10.svc.cluster.local
+  port: 8080
+
+- name: pilot
+  dest: istio-pilot.istio-system.svc.cluster.local
+  port: 8080
+
 - name: fortio11
-- name: fortiotls
+  dest: fortiotls.fortio11.svc.cluster.local
+  port: 8080
+
+#

@@ -1,63 +1,5 @@
-#
-# Gateways Configuration, refer to the charts/gateways/values.yaml
-# for detailed configuration
-#
-gateways:
-  enabled: true
-
-#
-# sidecar-injector webhook configuration, refer to the
-# charts/sidecarInjectorWebhook/values.yaml for detailed configuration
-#
-sidecarInjectorWebhook:
-  enabled: true
-
-#
-# galley configuration, refer to charts/galley/values.yaml
-# for detailed configuration
-#
-galley:
-  enabled: true
-
-#
-# mixer configuration
-#
-mixer:
-  policy:
-    enabled: true
-  telemetry:
-    enabled: true
-
-#
-# pilot configuration
-#
-pilot:
-  enabled: true
-  traceSampling: 1.0
-
-#
-# security configuration
-#
-security:
-  enabled: true
-
-#
-# nodeagent configuration
-#
-nodeagent:
-  enabled: false
-
-#
-# ingress configuration
-#
-ingress:
-  enabled: false
-
-#
-# addon grafana configuration
-#
 grafana:
-  enabled: false
+  enabled: true
 
 #
 # addon prometheus configuration
@@ -83,19 +25,6 @@ tracing:
 kiali:
   enabled: false
 
-#
-# Istio CNI plugin enabled
-#   If true, the privileged initContainer istio-init is not needed to perform the traffic redirect
-#   settings for the istio-proxy.
-#
-istio_cni:
-  enabled: false
-
-# addon Istio CoreDNS configuration
-#
-istiocoredns:
-  enabled: false
-
 # Common settings used among istio subcharts.
 global:
   # Default hub for Istio images.
@@ -104,46 +33,14 @@ global:
   hub: gcr.io/istio-release
 
   # Default tag for Istio images.
-  tag: master-latest-daily
-
-  k8sIngress:
-    enabled: false
-    # Gateway used for legacy k8s Ingress resources. By default it is
-    # using 'istio:ingress', to match 0.8 config. It requires that
-    # ingress.enabled is set to true. You can also set it
-    # to ingressgateway, or any other gateway you define in the 'gateway'
-    # section.
-    gatewayName: ingress
-    # enableHttps will add port 443 on the ingress.
-    # It REQUIRES that the certificates are installed  in the
-    # expected secrets - enabling this option without certificates
-    # will result in LDS rejection and the ingress will not work.
-    enableHttps: false
-
-
-  proxy_init:
-    # Base name for the proxy_init container, used to configure iptables.
-    image: proxy_init
+  tag: release-1.1-latest-daily
 
   # imagePullPolicy is applied to istio control plane components.
-  # local tests require IfNotPresent, to avoid uploading to dockerhub.
-  # TODO: Switch to Always as default, and override in the local tests.
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
 
   # controlPlaneMtls enabled. Will result in delays starting the pods while secrets are
   # propagated, not recommended for tests.
   controlPlaneSecurityEnabled: false
-
-  # disablePolicyChecks disables mixer policy checks.
-  # Will set the value with same name in istio config map - pilot needs to be restarted to take effect.
-  disablePolicyChecks: false
-
-  # policyCheckFailOpen allows traffic in cases when the mixer policy service cannot be reached.
-  # Default is false which means the traffic is denied when the client is unable to connect to Mixer.
-  policyCheckFailOpen: false
-
-  # EnableTracing sets the value with same name in istio config map, requires pilot restart to take effect.
-  enableTracing: true
 
   # Configuration for each of the supported tracers
   tracer:
@@ -166,12 +63,6 @@ global:
       # zipkin service (port 9411) in the same namespace as the other istio components.
       address: ""
 
-  # Default mtls policy. If true, mtls between services will be enabled by default.
-  mtls:
-    # Default setting for service-to-service mtls. Can be set explicitly using
-    # destination rules or service annotations.
-    enabled: false
-
   # ImagePullSecrets for all ServiceAccount, list of secrets in the same namespace
   # to use for pulling any images in pods that reference this ServiceAccount.
   # For components that don't use ServiceAccounts (i.e. grafana, servicegraph, tracing)
@@ -190,52 +81,13 @@ global:
     s390x: 2
     ppc64le: 2
 
-  # Whether to restrict the applications namespace the controller manages;
-  # If not set, controller watches all namespaces
-  oneNamespace: false
-
-  # Whether to perform server-side validation of configuration.
-  configValidation: true
-
-  # Custom DNS config for the pod to resolve names of services in other
-  # clusters. Use this to add additional search domains, and other settings.
-  # see
-  # https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#dns-config
-  # This does not apply to gateway pods as they typically need a different
-  # set of DNS settings than the normal application pods (e.g., in
-  # multicluster scenarios).
-  # NOTE: If using templates, follow the pattern in the commented example below.
-  #podDNSSearchNamespaces:
-  #- global
-  #- "[[ valueOrDefault .DeploymentMeta.Namespace \"default\" ]].global"  
-
-  # If set to true, the pilot and citadel mtls will be exposed on the
-  # ingress gateway
-  meshExpansion:
-    enabled: false
-    # If set to true, the pilot and citadel mtls and the plain text pilot ports
-    # will be exposed on an internal gateway
-    useILB: false
-
-  multiCluster:
-    # Set to true to connect two kubernetes clusters using a LB gateway as
-    # the only entry point into the cluster (instead of requiring pod to
-    # pod connectivity across two clusters). Note that for this system to
-    # work, service objects from remote clusters have to be replicated to
-    # local cluster (without the pod selectors). In addition, service
-    # entries have to be added for each replicated service object, where
-    # the endpoints in the service entry point to the remote cluster's
-    # mcgatewayIP:15443. All clusters should be using Istio mTLS and must
-    # have a shared root CA for this model to work.
-    connectUsingGateway: false
-
   # A minimal set of requested resources to applied to all deployments so that
   # Horizontal Pod Autoscaler will be able to function (if set).
   # Each component can overwrite these default values by adding its own resources
   # block in the relevant section below and setting the desired resources values.
-  defaultResources:
-    requests:
-      cpu: 10m
+  defaultResources: {}
+    #requests:
+    #  cpu: 10m
     #   memory: 128Mi
     # limits:
     #   cpu: 100m
@@ -248,24 +100,10 @@ global:
   # for more detail.
   priorityClassName: ""
 
-  # Include the crd definition when generating the template.
-  # For 'helm template' and helm install > 2.10 it should be true.
-  # For helm < 2.9, crds must be installed ahead of time with
-  # 'kubectl apply -f install/kubernetes/helm/istio/templates/crds.yaml
-  # and this options must be set off.
-  crds: true
-
   # Use the Mesh Control Protocol (MCP) for configuring Mixer and
   # Pilot. Requires galley (`--set galley.enabled=true`).
   useMCP: false
 
-  # The trust domain corresponds to the trust root of a system
-  # Refer to https://github.com/spiffe/spiffe/blob/master/standards/SPIFFE-ID.md#21-trust-domain
-  trustDomain: ""
-
-  sds:
-    # SDS enabled. IF set to true, mTLS certificates for the sidecars will be
-    # distributed through the SecretDiscoveryService instead of using K8S secrets to mount the certificates.
-    enabled: false
-    udsPath: ""
-    enableTokenMount: false
+  proxy:
+    enableCoreDump: false
+    image: proxyv2

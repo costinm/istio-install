@@ -7,9 +7,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: ingressgateway
-    chart: ingressgateway
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
 spec:
   hosts:
   - istio-pilot.{{ .Values.global.istioNamespace }}.svc.cluster.local
@@ -39,9 +36,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: ingressgateway
-    chart: ingressgateway
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
 spec:
   host: istio-pilot.{{ .Release.Namespace }}.svc.cluster.local
   trafficPolicy:

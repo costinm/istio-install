@@ -5,19 +5,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: ingressgateway
-    chart: ingressgateway
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
     istio: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
       labels:
-        chart: ingressgateway
-        heritage: {{ .Release.Service }}
-        release: {{ .Release.Name }}
-        version: {{ .Chart.Version }}
         app: ingressgateway
         istio: {{ .Release.Namespace }}
       annotations:
@@ -169,7 +162,7 @@ spec:
       {{- end }}
       - name: istio-certs
         secret:
-          secretName: istio.default-service-account
+          secretName: istio.default
           optional: true
       {{- range .Values.secretVolumes }}
       - name: {{ .name }}

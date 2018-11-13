@@ -24,7 +24,6 @@ function helm_cmd() {
         helm upgrade $n $* --set debug=debug
     elif [ "$upg" == "delete" ] ; then
         helm delete --purge $n
-        kubectl delete ns $n
     else
         helm install --namespace $n -n $n $*
     fi
@@ -43,15 +42,82 @@ function _helm_all() {
     helm_cmd $upg istio-egresstest istio-egress --set global.tag=master-latest-daily \
         --set zvpn.suffix=v10.webinf.info $*
 
-    helm_cmd $upg istio-ingress istio-ingress $*
-    helm_cmd $upg istio-ingress-10 istio-ingress --set global.tag=release-1.0-latest-daily --set global.istioNamespace=istio-pilot10  \
+    # Each environment namespace has an injector config
+    # Custom hub (for extra debug)
+    helm_cmd $upg istio-env11 istio-sidecar-injector --set global.hub=costinm
+
+    #helm_cmd $upg istio-ingress-12 --set global.tag=master-latest-daily \
+    #    --set zvpn.suffix=v10.webinf.info $*
+    helm_ingress $upg $*
+
+    helm_cmd $upg istio-telemetry istio-telemetry $*
+}
+
+function helm_ingress() {
+    # upgrade or install or delete
+    local upg=$1
+    shift
+
+    # TODO: customize test domains for each ingress namespace (move to separate function )
+    helm_cmd $upg istio-ingress istio-ingress \
+        --set domain=w11.istio.webinf.info \
+        --values istio-ingress/hosts.yaml $*
+    helm_cmd $upg istio-ingress-10 istio-ingress --set global.tag=release-1.0-latest-daily \
+        --set domain=w10.istio.webinf.info \
+        --values istio-ingress/hosts.yaml $* \
+        --set global.istioNamespace=istio-pilot10  \
         --set zvpn.enabled=false $*
     #helm_cmd $upg istio-ingress-12 --set global.tag=master-latest-daily \
     #    --set zvpn.suffix=v10.webinf.info $*
 
-    helm_cmd $upg istio-telemetry istio-telemetry $*
+}
 
+# Kubernetes log wrapper
+function _klog() {
+    local label=$1
+    local container=${2:-istio-proxy}
+    local ns=${3:-istio-system}
+    echo kubectl --namespace=$ns log $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') $container
+    kubectl --namespace=$ns log $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') $container $4
+}
 
+# Kubernetes exec wrapper
+function _kexec() {
+    local label=$1
+    local container=${2:-istio-proxy}
+    local ns=${3:-istio-system}
+    local cmd=${4:-/bin/bash}
+    kubectl --namespace=$ns exec -it $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') -c $container -- "$cmd"
+}
+
+function logs-ingress() {
+    istioctl proxy-status -i istio-pilot11
+    _klog istio=istio-ingress istio-proxy istio-ingress $*
+}
+
+function exec-ingress() {
+    istioctl proxy-status -i istio-pilot11
+    _kexec istio=istio-ingress istio-proxy istio-ingress $*
+}
+
+function logs-inject() {
+    _klog istio=sidecar-injector sidecar-injector-webhook istio-env11 $*
+}
+
+function logs-pilot11() {
+    _klog istio=pilot discovery istio-pilot11 $*
+}
+
+function exec-pilot11() {
+    _kexec istio=pilot discovery istio-pilot11 $*
+}
+
+function logs-fortio11() {
+    _klog app=fortiotls istio-proxy fortio11 $*
+}
+
+function exec-fortio11() {
+    _kexec app=fortiotls istio-proxy fortio11 $*
 }
 
 function install_test_apps() {
@@ -72,10 +138,10 @@ function install_testns() {
 
 
     kubectl create ns fortio11
-    kubectl label ns fortio11 istio-injection=istio-sidecarinjector11
+    kubectl label ns fortio11 istio-env=istio-sidecarinjector11
 
     kubectl create ns fortio10
-    kubectl label ns fortio10 istio-injection=istio-sidecarinjector10
+    kubectl label ns fortio10 istio-env=istio-sidecarinjector10
 }
 
 # Setup DNS entries - currently using gcloud
@@ -95,10 +161,13 @@ function testCreateDNS() {
     gcloud dns --project=$DNS_PROJECT record-sets transaction execute --zone=$DNS_ZONE
 }
 
-# Get a wildcard ACME cert. MUST BE CALLED BEFORE SETTING THE CNAME
-function getCertLego() {
+# Prepare GKE for Lego DNS. You must have a domain, $DNS_PROJECT
+# and a zone DNS_ZONE created.
+function getCertLegoInit() {
+ local domain=${1:-w10.istio.webinf.info}
+
  # DNS_ZONE=istiotest
- #GCP_PROJECT=costin-istio
+ # GCP_PROJECT=costin-istio
  # DNS_DOMAIN=istio.webinf.info
  gcloud iam service-accounts create dnsmaster
  gcloud projects add-iam-policy-binding $DNS_PROJECT  \
@@ -107,12 +176,18 @@ function getCertLego() {
  gcloud iam service-accounts keys create $HOME/.ssh/dnsmaster.json \
     --iam-account dnsmaster@${DNS_PROJECT}.iam.gserviceaccount.com
 
- gcloud dns record-sets list --zone istiotest
+ gcloud dns record-sets list --zone ${DNS_ZONE}
+
+}
+
+# Get a wildcard ACME cert. MUST BE CALLED BEFORE SETTING THE CNAME
+function getCertLego() {
+ local domain=${1:-w10.istio.webinf.info}
 
  GCE_SERVICE_ACCOUNT_FILE=~/.ssh/dnsmaster.json \
  GCE_PROJECT="$DNS_PROJECT"  \
  lego -a --email="dnsmaster@${DNS_PROJECT}.iam.gserviceaccount.com"  \
- --domains="*.istio.webinf.info"     \
+ --domains="*.${domain}"     \
  --dns="gcloud"     \
  --path="${HOME}/.lego"  run
 }

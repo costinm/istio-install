@@ -6,9 +6,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: sidecar-injector
-    chart: sidecar-injector
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
     istio: sidecar-injector
 data:
   # Mesh config used to generate the template. Template uses ProxyConfig to access it
@@ -16,13 +13,73 @@ data:
   # Either way a restart of the injector is needed.
   # Main use case would be adding directly a section of values.yaml, which can be overritten
   mesh: |-
-    {{- if .Values.mesh }}
-    {{ toYaml .Values.mesh | indent 4 }}
-    {{- end }}
+   defaultConfig:
+     #
+     # TCP connection timeout between Envoy & the application, and between Envoys.
+     connectTimeout: 10s
+     #
+     ### ADVANCED SETTINGS #############
+     # Where should envoy's configuration be stored in the istio-proxy container
+     configPath: "/etc/istio/proxy"
+     # The pseudo service name used for Envoy.
+     serviceCluster: istio-proxy
+     # These settings that determine how long an old Envoy
+     # process should be kept alive after an occasional reload.
+     drainDuration: 45s
+     parentShutdownDuration: 1m0s
+     #
+     # Port where Envoy listens (on local host) for admin commands
+     # You can exec into the istio-proxy container in a pod and
+     # curl the admin port (curl http://localhost:15000/) to obtain
+     # diagnostic information from Envoy. See
+     # https://lyft.github.io/envoy/docs/operations/admin.html
+     # for more details
+     proxyAdminPort: 15000
+     #
+     # Set concurrency to a specific number to control the number of Proxy worker threads.
+     # If set to 0 (default), then start worker thread for each CPU thread/core.
+     concurrency: {{ .Values.global.proxy.concurrency }}
+     #
+     {{- if eq .Values.global.proxy.tracer "lightstep" }}
+     tracing:
+       lightstep:
+         # Address of the LightStep Satellite pool
+         address: {{ .Values.global.tracer.lightstep.address }}
+         # Access Token used to communicate with the Satellite pool
+         accessToken: {{ .Values.global.tracer.lightstep.accessToken }}
+         # Whether communication with the Satellite pool should be secure
+         secure: {{ .Values.global.tracer.lightstep.secure }}
+         # Path to the file containing the cacert to use when verifying TLS
+         cacertPath: {{ .Values.global.tracer.lightstep.cacertPath }}
+     {{- else if eq .Values.global.proxy.tracer "zipkin" }}
+     tracing:
+       zipkin:
+         # Address of the Zipkin collector
+       {{- if .Values.global.tracer.zipkin.address }}
+         address: {{ .Values.global.tracer.zipkin.address }}
+       {{- else }}
+         address: zipkin.{{ .Release.Namespace }}:9411
+       {{- end }}
+     {{- end }}
 
+   {{- if .Values.global.controlPlaneSecurityEnabled }}
+     #
+     # Mutual TLS authentication between sidecars and istio control plane.
+     controlPlaneAuthPolicy: MUTUAL_TLS
+     #
+     # Address where istio Pilot service is running
+     discoveryAddress: istio-pilot.{{ .Values.global.istioNamespace }}:15011
+   {{- else }}
+     #
+     # Mutual TLS authentication between sidecars and istio control plane.
+     controlPlaneAuthPolicy: NONE
+     #
+     # Address where istio Pilot service is running
+     discoveryAddress: istio-pilot.{{ .Values.global.istioNamespace }}:15010
+   {{- end }}
 
   config: |-
-    policy: {{ .Values.global.proxy.autoInject }}
+    policy: enabled
     template: |-
 {{- if or (not .Values.istio_cni.enabled) .Values.global.proxy.enableCoreDump }}
       initContainers:
@@ -33,7 +90,8 @@ data:
 {{- else }}
         image: {{ "[[ annotation .ObjectMeta `sidecar.istio.io/proxyImage` " }} "{{ .Values.global.hub }}/{{ .Values.global.proxy.image }}:{{ .Values.global.tag }}" {{ " ]]" }}
 {{- end }}
-        args:
+        command:
+        - "/usr/local/bin/istio-iptables.sh"
         - "-p"
         - {{ "[[ .MeshConfig.ProxyListenPort ]]" }}
         - "-u"
@@ -138,8 +196,8 @@ data:
         - {{ "[[ .ProxyConfig.Concurrency ]]" }}
         {{ "[[ end -]]" }}
         - --controlPlaneAuthPolicy
-          }}}}        - {{ "[[ annotation .ObjectMeta `sidecar.istio.io/controlPlaneAuthPolicy` .ProxyConfig.ControlPlaneAuthPolicy ]]" }}
-      {{ "[[- if (ne (annotation .ObjectMeta `status.sidecar.istio.io/port` " }} {{ .Values.global.proxy.statusPort }} {{ ") \"0\") ]]" }}
+        - {{ "[[ annotation .ObjectMeta `sidecar.istio.io/controlPlaneAuthPolicy` .ProxyConfig.ControlPlaneAuthPolicy ]]" }}
+          {{ "[[- if (ne (annotation .ObjectMeta `status.sidecar.istio.io/port` " }} {{ .Values.global.proxy.statusPort }} {{ ") \"0\") ]]" }}
         - --statusPort
         - {{ "[[ annotation .ObjectMeta `status.sidecar.istio.io/port` " }} {{ .Values.global.proxy.statusPort }} {{ " ]]" }}
         - --applicationPorts
@@ -187,7 +245,7 @@ data:
           initialDelaySeconds: {{ "[[ annotation .ObjectMeta `readiness.status.sidecar.istio.io/initialDelaySeconds` " }} {{ .Values.global.proxy.readinessInitialDelaySeconds }} {{ " ]]" }}
           periodSeconds: {{ "[[ annotation .ObjectMeta `readiness.status.sidecar.istio.io/periodSeconds` " }} {{ .Values.global.proxy.readinessPeriodSeconds }} {{ " ]]" }}
           failureThreshold: {{ "[[ annotation .ObjectMeta `readiness.status.sidecar.istio.io/failureThreshold` " }} {{ .Values.global.proxy.readinessFailureThreshold }} {{ " ]]" }}
-        {{ "[[ end -]]" -}}
+        {{- "[[- end ]]" }}
         securityContext:
           {{ if .Values.global.proxy.privileged }}
           privileged: true

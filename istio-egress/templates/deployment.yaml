@@ -169,7 +169,7 @@ spec:
       {{- end }}
       - name: istio-certs
         secret:
-          secretName: istio.default-service-account
+          secretName: istio.default
           optional: true
       {{- range .Values.secretVolumes }}
       - name: {{ .name }}

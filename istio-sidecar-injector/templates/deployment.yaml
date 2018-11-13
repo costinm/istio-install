@@ -27,6 +27,7 @@ spec:
       annotations:
         sidecar.istio.io/inject: "false"
         scheduler.alpha.kubernetes.io/critical-pod: ""
+        checksum/config-volume: {{ print $.Template.BasePath "/sidecar-injector-configmap.yaml" | sha256sum }}
     spec:
       serviceAccountName: istio-sidecar-injector-service-account
  {{- if .Values.global.priorityClassName }}
@@ -44,6 +45,8 @@ spec:
             - --meshConfig=/etc/istio/inject/mesh
             - --healthCheckInterval=2s
             - --healthCheckFile=/health
+            - --webhookConfigName=istio-sidecar-injector-{{ .Release.Namespace }}
+            - --log_output_level=debug
           volumeMounts:
           - name: certs
             mountPath: /etc/istio/certs

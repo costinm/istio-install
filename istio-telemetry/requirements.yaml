@@ -1,7 +1,6 @@
 dependencies:
   - name: mixer
     version: 1.1.0
-    condition: mixer.telemetry.enabled
   - name: prometheus
     version: 1.1.0
     condition: prometheus.enabled

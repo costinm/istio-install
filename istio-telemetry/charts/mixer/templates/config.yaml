@@ -128,10 +128,7 @@ metadata:
   name: kubernetes
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: istio-telemetry
 spec:
   attributes:
     source.ip:
@@ -197,10 +194,7 @@ metadata:
   name: stdio
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: istio-telemetry
 spec:
   compiledAdapter: stdio
   params:
@@ -212,10 +206,7 @@ metadata:
   name: accesslog
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: istio-telemetry
 spec:
   severity: '"Info"'
   timestamp: request.time
@@ -268,8 +259,7 @@ metadata:
   name: tcpaccesslog
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -309,8 +299,8 @@ metadata:
   name: stdio
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -326,8 +316,8 @@ metadata:
   name: stdiotcp
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -343,8 +333,8 @@ metadata:
   name: requestcount
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -377,8 +367,8 @@ metadata:
   name: requestduration
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -411,8 +401,8 @@ metadata:
   name: requestsize
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -445,8 +435,8 @@ metadata:
   name: responsesize
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -479,8 +469,8 @@ metadata:
   name: tcpbytesent
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -509,8 +499,8 @@ metadata:
   name: tcpbytereceived
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -539,8 +529,8 @@ metadata:
   name: prometheus
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -699,8 +689,8 @@ metadata:
   name: promhttp
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -719,8 +709,8 @@ metadata:
   name: promtcp
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -738,8 +728,8 @@ metadata:
   name: kubernetesenv
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -759,8 +749,8 @@ metadata:
   name: kubeattrgenrulerule
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -775,8 +765,8 @@ metadata:
   name: tcpkubeattrgenrulerule
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -792,8 +782,8 @@ metadata:
   name: attributes
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -837,8 +827,8 @@ metadata:
   name: istio-policy
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
@@ -862,8 +852,8 @@ metadata:
   name: istio-telemetry
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "mixer.name" . }}
-    chart: {{ template "mixer.chart" . }}
+    app: istio-telemetry
+    chart: istio-telemetry
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
