@@ -51,11 +51,12 @@ kind: Deployment
 metadata:
   name: fortiotls
 spec:
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       annotations:
-        sidecar.istio.io/discoveryAddress: "istio-pilot.{{ .Values.pilotns }}:15010"
+        sidecar.istio.io/debug: "{{ .Values.debug }}"
+        #sidecar.istio.io/discoveryAddress: "istio-pilot.{{ .Values.pilotns }}:15010"
       labels:
         app: fortiotls
         version: tls
@@ -75,4 +76,50 @@ spec:
           limits:
             cpu: 1000m
             memory: "1G"
+      - name: app
+        image: istionightly/app:nightly-release-1.0
+        imagePullPolicy: IfNotPresent
+        args:
+        - --port
+        - "8081"
+        - --port
+        - "80"
+        - --port
+        - "9090"
+        - --port
+        - "90"
+        - --grpc
+        - "7070"
+        - --grpc
+        - "70"
+        - --port
+        - "10090"
+        - --port
+        - "19090"
+        - --port
+        - "3333"
+        - --version
+        - "v1"
+        ports:
+        - containerPort: 8081
+        - containerPort: 80
+        - containerPort: 9090
+        - containerPort: 90
+        - containerPort: 10090
+        - containerPort: 19090
+        - name: tcp-health-port
+          containerPort: 3333
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3333
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 10
+        readinessProbe:
+          tcpSocket:
+            port: tcp-health-port
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 10
 

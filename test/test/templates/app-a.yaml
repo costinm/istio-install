@@ -43,7 +43,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: {{.Values.testHub}}/app:{{.Values.testTag}}
+        image: istionightly/app:nightly-master
         imagePullPolicy: IfNotPresent
         args:
         - --port

@@ -120,6 +120,19 @@ function exec-fortio11() {
     _kexec app=fortiotls istio-proxy fortio11 $*
 }
 
+function exec-fortio11-cli() {
+    _kexec app=cli-fortio-tls app fortio11 $*
+}
+
+function exec-fortio11-cli-proxy() {
+    # curl -v  -k  --key /etc/certs/key.pem --cert /etc/certs/cert-chain.pem https://fortiotls:8080
+    _kexec app=cli-fortio-tls istio-proxy fortio11 $*
+}
+
+function logs-fortio11-cli() {
+    _klog app=cli-fortio-tls istio-proxy fortio11 $*
+}
+
 function install_test_apps() {
     #helm install -n fortio11 --namespace fortio11 helm/fortio
     #kubectl -n test apply -f samples/httpbin/httpbin.yaml

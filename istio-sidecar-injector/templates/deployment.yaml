@@ -35,7 +35,7 @@ spec:
 {{- end }}
       containers:
         - name: sidecar-injector-webhook
-          image: "{{ .Values.global.hub }}/{{ .Values.image }}:{{ .Values.global.tag }}"
+          image: "{{ .Values.global.hub }}/sidecar_injector:{{ .Values.global.tag }}"
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           args:
             - --caCertFile=/etc/istio/certs/root-cert.pem

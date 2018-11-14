@@ -1,42 +1,49 @@
-## Requires citadel istio-sidecar-injector-service-account.istio-env11:istio-sidecar-injector.istio-env11.svc
-
-#
-# sidecar-injector webhook configuration
-#
-replicaCount: 1
-image: sidecar_injector
-enableNamespacesByDefault: false
-istio_cni:
-  enabled: false
-
-
-
-# Global contains common fields, used in several Istio components.
-# It is possible for each component to use different a setup profile.
+# Global setting affecting injection
 global:
+  # Namespace running the control plane.
+  # It is possible to use multiple Pilot instanes, for example a production
+  # and canary running a new version of Istio or having canary-oriented configs (
+  # more debug, etc ). For each control plane variant you need to create a matching
+  # injection environmet
   istioNamespace: istio-pilot11
 
   hub: gcr.io/istio-release
   #tag: master-latest-daily
   #tag: release-1.0-latest-daily
   tag: release-1.1-latest-daily
-  # imagePullPolicy is applied to istio control plane components.
-  imagePullPolicy: Always
 
+  # imagePullPolicy for this component.
+  imagePullPolicy: Always
 
   proxy_init:
     # Base name for the proxy_init container, used to configure iptables.
-    # Note that it is different from istio1.0 - same image was used.
+    # Note that it is different from istio1.0, where an alpine-based image was used.
+    # Using the same image as the sidecar increases the init time ( larger download )
+    # but reduces the startup time of the sidecar (image already fetched ) and the
+    # chance the app will run without a proper sidecar.
     image: proxyv2
 
   proxy:
-    #includeIPRanges: ""
+    # Can be overriten by sidecar.istio.io/includeOutboundIPRanges
+    # Controls egress ranges to intercept, could be set to the cluster CIDR to
+    # only capture traffic to services.
+    includeIPRanges: "*"
+
     #excludeIPRanges: ""
-    #statusPort
-    enableCoreDump: false
+
+    privileged: true
+
+    # Enable core dump, also makes the root filesystem writeable
+    enableCoreDump: true
+
+    # Docker image to use. Can be HUB/IMAGE:TAG
     image: proxyv2
-    tracer: zipkin
-    # Default port for Pilot agent health checks. A value of 0 will disable health checking.
+
+    # If set to zipkin, will use 'global.tracing.zipkin.address'
+    tracer: none
+
+    # Default port for Pilot agent health checks. A value of 0 will disable
+    # health checking for sidecar.
     statusPort: 15020
 
     # The initial delay for readiness probes in seconds.
@@ -66,8 +73,7 @@ global:
   sds:
     enabled: false
 
-  # Configuration for each of the supported tracers
-  tracer:
+  tracing:
     # Configuration for envoy to send trace data to LightStep.
     # Disabled by default.
     # address: the <host>:<port> of the satellite pool
@@ -91,3 +97,45 @@ global:
     amd64: 2
     s390x: 2
     ppc64le: 2
+
+
+## Requires citadel istio-sidecar-injector-service-account.istio-env11:istio-sidecar-injector.istio-env11.svc
+
+# sidecar-injector webhook configuration.
+# If down, new pods will fail to start or restart for a short time, but they will
+# retry.
+replicaCount: 1
+
+# This enables injection of sidecar in all namespaces,
+# with the exception of namespaces with "istio-injection:disabled" annotation
+# Only one environment should have this enabled.
+enableNamespacesByDefault: false
+
+# If set, no iptable init will be added. It assumes CNI is installed.
+istio_cni:
+  enabled: false
+
+# Debug level for envoy and pilot-agent. Can be set to 'debug' for very verbose
+# messages.
+debug: info
+
+# Mesh config values affecting injection. See the api - this is just the subset
+# needed for injection.
+mesh:
+
+  # TCP connection timeout when connecting to pilot
+  connectTimeout: 10s
+
+  # These settings that determine how long an old Envoy
+  # process should be kept alive after an occasional reload.
+  drainDuration: 45s
+  parentShutdownDuration: 1m0s
+
+  #
+  # Set concurrency to a specific number to control the number of Proxy worker threads.
+  # If not set (default), then start worker thread for each CPU thread/core.
+  #concurrency:
+
+  interceptionMode: REDIRECT
+
+

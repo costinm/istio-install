@@ -12,36 +12,51 @@
 
 domain: example.com
 
-tcp:
-- port: 8000
-  name: tcp-iperf3
-
 hosts:
-- name: prom11
-  dest: prometheus.istio-telemetry.svc.cluster.local
-  port: 9090
-
 - name: prom
-  dest: prometheus.istio-system.svc.cluster.local
+  dest: prometheus.istio-telemetry.svc.cluster.local
   port: 9090
 
 - name: grafana
   dest: grafana.istio-telemetry.svc.cluster.local
   port: 3000
 
+- name: sg
+  dest: servicegraph.istio-telemetry.svc.cluster.local
+  port: 8088
+
+- name: tracing
+  dest: tracing.istio-telemetry.svc.cluster.local
+  port: 80
+
+# Old 1.0 version of prometheus - collects data from 1.0 mixer
+- name: prom10
+  dest: prometheus.istio-system.svc.cluster.local
+  port: 9090
+
+# 1.0 version of grafana in istio-system
+- name: grafana10
+  dest: grafana.istio-system.svc.cluster.local
+  port: 3000
+
 - name: trace
   dest: tracing.istio-system.svc.cluster.local
   port: 80
 
-- name: pilot11
+- name: istio-pilot
+  dest: istio-pilot.istio-pilot11.svc.cluster.local
+  port: 15011
+
+# External domains pointing to pilot debug port
+- name: pilot
   dest: istio-pilot.istio-pilot11.svc.cluster.local
   port: 8080
 
-- name: pilot10
+- name: pilot104
   dest: istio-pilot.istio-pilot10.svc.cluster.local
   port: 8080
 
-- name: pilot
+- name: pilot10
   dest: istio-pilot.istio-system.svc.cluster.local
   port: 8080
 
@@ -49,4 +64,8 @@ hosts:
   dest: fortiotls.fortio11.svc.cluster.local
   port: 8080
 
-#
+# In progress.
+tcp:
+- port: 8000
+  name: tcp-iperf3
+

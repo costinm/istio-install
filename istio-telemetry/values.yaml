@@ -11,13 +11,13 @@ prometheus:
 # addon servicegraph configuration
 #
 servicegraph:
-  enabled: false
+  enabled: true
 
 #
 # addon jaeger tracing configuration
 #
 tracing:
-  enabled: false
+  enabled: true
 
 #
 # addon kiali tracing configuration
