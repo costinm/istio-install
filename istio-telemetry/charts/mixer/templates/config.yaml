@@ -188,6 +188,7 @@ spec:
     destination.workload.namespace:
       valueType: STRING
 ---
+{{- if .Values.stdioAccessLog }}
 apiVersion: "config.istio.io/v1alpha2"
 kind: handler
 metadata:
@@ -198,7 +199,8 @@ metadata:
 spec:
   compiledAdapter: stdio
   params:
-    outputAsJson: true
+    outputAsJson: false
+{{- end }}
 ---
 apiVersion: "config.istio.io/v1alpha2"
 kind: logentry
@@ -293,6 +295,7 @@ spec:
     reporter: conditional((context.reporter.kind | "inbound") == "outbound", "source", "destination")
   monitored_resource_type: '"global"'
 ---
+{{- if .Values.stdioAccessLog }}
 apiVersion: "config.istio.io/v1alpha2"
 kind: rule
 metadata:
@@ -326,6 +329,7 @@ spec:
   - handler: stdio
     instances:
     - tcpaccesslog.logentry
+{{- end }}
 ---
 apiVersion: "config.istio.io/v1alpha2"
 kind: metric

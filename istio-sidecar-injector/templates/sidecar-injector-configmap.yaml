@@ -124,7 +124,7 @@ data:
         - "{{ .Values.global.tracer.lightstep.cacertPath }}"
       {{- else if eq .Values.global.proxy.tracer "zipkin" }}
         - --zipkinAddress
-        - "{{ .Values.global.tracer.zipkin.address }}"
+        - zipkin.{{ .Values.global.telemetryNamespace }}:9411
       {{- end }}
         - --connectTimeout
         - "{{ .Values.mesh.connectTimeout }}"
@@ -238,8 +238,8 @@ data:
           name: istio-token
         {{- end }}
         {{- end }}
-        {{ if and (eq .Values.global.proxy.tracer "lightstep") .Values.global.tracing.lightstep.cacertPath }}
-        - mountPath: "{{ .Values.global.tracing.lightstep.cacertPath }}"
+        {{ if and (eq .Values.global.proxy.tracer "lightstep") .Values.global.tracer.lightstep.cacertPath }}
+        - mountPath: "{{ .Values.global.tracer.lightstep.cacertPath }}"
           name: lightstep-certs
           readOnly: true
         {{- end }}
@@ -258,7 +258,7 @@ data:
               audience: {{ .Values.global.trustDomain }}
       {{- end }}
       {{- end }}
-      {{ if and (eq .Values.global.proxy.tracer "lightstep") .Values.global.tracing.lightstep.cacertPath }}
+      {{ if and (eq .Values.global.proxy.tracer "lightstep") .Values.global.tracer.lightstep.cacertPath }}
       - name: lightstep-certs
         secret:
           optional: true

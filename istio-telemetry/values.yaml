@@ -1,11 +1,47 @@
+mixer:
+  # If set to true, will add 'rule' and 'stdio' handler for access logs.
+  # If false, user will need to configure their own rules outside of installer.
+  stdioAccessLog: false
+
+  image: mixer
+  env:
+    GODEBUG: gctrace=2
+  enabled: true
+  replicaCount: 1
+  autoscaleEnabled: true
+  autoscaleMin: 1
+  autoscaleMax: 5
+  cpu:
+    targetAverageUtilization: 80
+
+  resources:
+    requests:
+      cpu: 900m
+      memory: 1G
+
+  podAnnotations: {}
+
+  adapters:
+    prometheus:
+      metricsExpiryDuration: 10m
+
+
 grafana:
   enabled: true
+
 
 #
 # addon prometheus configuration
 #
 prometheus:
   enabled: true
+  replicaCount: 1
+  hub: docker.io/prom
+  tag: v2.3.1
+  retention: 6h
+
+  # Controls the frequency of prometheus scraping
+  scrapeInterval: 15s
 
 #
 # addon servicegraph configuration
@@ -37,6 +73,10 @@ global:
 
   # imagePullPolicy is applied to istio control plane components.
   imagePullPolicy: Always
+
+  policyNamespace: istio-policy
+  istioNamespace: istio-pilot11
+  configNamespace: istio-system
 
   # controlPlaneMtls enabled. Will result in delays starting the pods while secrets are
   # propagated, not recommended for tests.

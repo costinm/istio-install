@@ -66,6 +66,7 @@ spec:
         image: {{ .Values.fortioImage | default "istio/fortio:1.0.1" }}
         ports:
          - containerPort: 8080
+         - containerPort: 8081
          - containerPort: 8079
         args:
           - server
@@ -76,12 +77,13 @@ spec:
           limits:
             cpu: 1000m
             memory: "1G"
+
       - name: app
         image: istionightly/app:nightly-release-1.0
         imagePullPolicy: IfNotPresent
         args:
         - --port
-        - "8081"
+        - "8082"
         - --port
         - "80"
         - --port
@@ -99,9 +101,9 @@ spec:
         - --port
         - "3333"
         - --version
-        - "v1"
+        - "v2"
         ports:
-        - containerPort: 8081
+        - containerPort: 8082
         - containerPort: 80
         - containerPort: 9090
         - containerPort: 90

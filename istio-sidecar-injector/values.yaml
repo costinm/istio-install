@@ -1,20 +1,37 @@
-# Global setting affecting injection
+# Each injector defines the environment for the injected pods.
+# Similarly, kube-inject and CNI will use a specific config template to select
+# an environment for the pods.
+
+# The main components of an environment:
+# - location of discovery, telemetry, flags used in injecting the pod
+# - the discovery environment will also have specific settings
+
+# For example you can have an injector named 'dev-debug' enabling core dump,
+# verbose logging and using master version of pilot and telemetry and
+# a 'prod' environment using latest stable version of pilot and telemetry
+# with minimal logging.
+
 global:
   # Namespace running the control plane.
   # It is possible to use multiple Pilot instanes, for example a production
   # and canary running a new version of Istio or having canary-oriented configs (
   # more debug, etc ). For each control plane variant you need to create a matching
-  # injection environmet
+  # injection environment.
   istioNamespace: istio-pilot11
+
+  # Telemetry namespace, including zipkin.
+  # This is used if tracer=zipkin.
+  telemetryNamespace: istio-telemetry
 
   hub: gcr.io/istio-release
   #tag: master-latest-daily
   #tag: release-1.0-latest-daily
   tag: release-1.1-latest-daily
 
-  # imagePullPolicy for this component.
+  # imagePullPolicy .
   imagePullPolicy: Always
 
+  # TODO: move to injector-specific section
   proxy_init:
     # Base name for the proxy_init container, used to configure iptables.
     # Note that it is different from istio1.0, where an alpine-based image was used.
@@ -23,6 +40,7 @@ global:
     # chance the app will run without a proper sidecar.
     image: proxyv2
 
+  # TODO: move to injector-specific section
   proxy:
     # Can be overriten by sidecar.istio.io/includeOutboundIPRanges
     # Controls egress ranges to intercept, could be set to the cluster CIDR to
@@ -40,7 +58,8 @@ global:
     image: proxyv2
 
     # If set to zipkin, will use 'global.tracing.zipkin.address'
-    tracer: none
+    # None will disable tracing
+    tracer: zipkin
 
     # Default port for Pilot agent health checks. A value of 0 will disable
     # health checking for sidecar.
@@ -73,7 +92,7 @@ global:
   sds:
     enabled: false
 
-  tracing:
+  tracer:
     # Configuration for envoy to send trace data to LightStep.
     # Disabled by default.
     # address: the <host>:<port> of the satellite pool
@@ -89,8 +108,7 @@ global:
       secure: true               # example: true|false
       cacertPath: ""             # example: /etc/lightstep/cacert.pem
     zipkin:
-      # Host:Port for reporting trace data in zipkin format. If not specified, will default to
-      # zipkin service (port 9411) in the same namespace as the other istio components.
+
       address: ""
 
   arch:
@@ -112,6 +130,7 @@ replicaCount: 1
 enableNamespacesByDefault: false
 
 # If set, no iptable init will be added. It assumes CNI is installed.
+# TODO: rename to 'enableIptables' or add 'interceptionMode: CNI'
 istio_cni:
   enabled: false
 

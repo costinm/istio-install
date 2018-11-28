@@ -21,10 +21,12 @@ function helm_cmd() {
     # --set global.tag=$TAG --set global.hub=$HUB
 
     if [ "$upg" == "upgrade" ] ; then
+        echo helm upgrade $n $* --set debug=debug
         helm upgrade $n $* --set debug=debug
     elif [ "$upg" == "delete" ] ; then
         helm delete --purge $n
     else
+        echo helm install --namespace $n -n $n $*
         helm install --namespace $n -n $n $*
     fi
 }
@@ -205,3 +207,29 @@ function getCertLego() {
  --path="${HOME}/.lego"  run
 }
 
+# For testing the config
+function localPilot() {
+    pilot-discovery discovery \
+        --kubeconfig $KUBECONIG \
+        --meshConfig test/local/mesh.yaml \
+        --networksConfig test/local/meshNetworks.yaml \
+
+    # TODO:
+    #
+
+    # Untested flags: --domain, -a (oneNamespace)
+    # --namespace - ???
+    # --plugiins=
+    #
+
+    # Defaults:
+    # secureGrpcAddr :15011
+    # meshConfig /etc/istio/config/mesh
+    # networksConfig /etc/istio/config/meshNetworks
+
+    # To deprecate:
+    # --mcpServerAddrs mcps://istio-galley:9901 -> MeshConfig.ConfigSources.Address
+    # -registries
+    # -clusterRegistriesNamespace
+    #
+}

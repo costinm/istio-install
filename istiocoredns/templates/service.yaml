@@ -4,10 +4,7 @@ metadata:
   name: istiocoredns
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "istiocoredns.name" . }}
-    chart: {{ template "istiocoredns.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: istiocoredns.name
 spec:
   selector:
     app: istiocoredns

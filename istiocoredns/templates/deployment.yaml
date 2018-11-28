@@ -4,10 +4,7 @@ metadata:
   name: istiocoredns
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "istiocoredns.name" . }}
-    chart: {{ template "istiocoredns.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: istiocoredns
 spec:
   replicas: {{ .Values.replicaCount }}
   template:
@@ -15,10 +12,6 @@ spec:
       name: istiocoredns
       labels:
         app: istiocoredns
-        chart: {{ template "istiocoredns.chart" . }}
-        heritage: {{ .Release.Service }}
-        release: {{ .Release.Name }}
-        version: {{ .Chart.Version }}
       annotations:
         sidecar.istio.io/inject: "false"
         scheduler.alpha.kubernetes.io/critical-pod: ""
@@ -30,7 +23,7 @@ spec:
       containers:
       - name: coredns
         image: {{ .Values.coreDNSImage }}
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         args: [ "-conf", "/etc/coredns/Corefile" ]
         volumeMounts:
         - name: config-volume
@@ -63,6 +56,7 @@ spec:
       - name: istio-coredns-plugin
         command:
         - /usr/local/bin/plugin
+        #args: ["--default-address",""]
         image: {{ .Values.coreDNSPluginImage }}
         imagePullPolicy: IfNotPresent
         ports:

@@ -3,10 +3,7 @@ kind: ClusterRole
 metadata:
   name: istiocoredns
   labels:
-    app: {{ template "istiocoredns.name" . }}
-    chart: {{ template "istiocoredns.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: istiodns
 rules:
 - apiGroups: ["networking.istio.io"]
   resources: ["*"]

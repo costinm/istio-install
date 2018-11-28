@@ -55,6 +55,7 @@ spec:
           - --mcpServerAddrs=mcps://istio-galley.{{ $.Release.Namespace }}.svc:9901
           - --certFile=/etc/certs/cert-chain.pem
           - --keyFile=/etc/certs/key.pem
+          - --networkConfig=/etc/istio/config/meshNetworks
           - --caCertFile=/etc/certs/root-cert.pem
     {{- else }}
           - --mcpServerAddrs=mcp://istio-galley.{{ $.Release.Namespace }}.svc:9901

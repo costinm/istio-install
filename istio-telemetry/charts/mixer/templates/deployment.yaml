@@ -66,7 +66,7 @@ spec:
           - --configStoreURL=mcp://istio-galley.{{ .Release.Namespace }}.svc:9901
     {{- end }}
 {{- else }}
-          - --configStoreURL=k8s://
+          - --configStoreURL=k8s://?ns={{ .Release.Namespace }}
 {{- end }}
           - --configDefaultNamespace={{ .Release.Namespace }}
           {{- if .Values.global.tracer.zipkin.address }}
