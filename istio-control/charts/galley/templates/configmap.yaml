@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: istio-galley-configuration
+  namespace: {{ .Release.Namespace }}
+data:
+  validatingwebhookconfiguration.yaml: |-
+    apiVersion: admissionregistration.k8s.io/v1beta1
+    kind: ValidatingWebhookConfiguration
+    metadata:
+      name: istio-galley
+      namespace: {{ .Release.Namespace }}
+    webhooks:
+      {{- if .Values.global.configValidation }}
+          - name: pilot.validation.istio.io
+            clientConfig:
+            service:
+            name: istio-galley
+            namespace: {{ .Release.Namespace }}
+            path: "/admitpilot"
+            caBundle: ""
+            rules:
+            - operations:
+            - CREATE
+            - UPDATE
+            apiGroups:
+            - config.istio.io
+            apiVersions:
+            - v1alpha2
+            resources:
+            - httpapispecs
+            - httpapispecbindings
+            - quotaspecs
+            - quotaspecbindings
+            - operations:
+            - CREATE
+            - UPDATE
+            apiGroups:
+            - rbac.istio.io
+            apiVersions:
+            - "*"
+            resources:
+            - "*"
+            - operations:
+            - CREATE
+            - UPDATE
+            apiGroups:
+            - authentication.istio.io
+            apiVersions:
+            - "*"
+            resources:
+            - "*"
+            - operations:
+            - CREATE
+            - UPDATE
+            apiGroups:
+            - networking.istio.io
+            apiVersions:
+            - "*"
+            resources:
+            - destinationrules
+            - envoyfilters
+            - gateways
+            - serviceentries
+            - virtualservices
+            failurePolicy: Fail
+          - name: mixer.validation.istio.io
+          clientConfig:
+          service:
+          name: istio-galley
+          namespace: {{ .Release.Namespace }}
+          path: "/admitmixer"
+          caBundle: ""
+          rules:
+          - operations:
+          - CREATE
+          - UPDATE
+          apiGroups:
+          - config.istio.io
+          apiVersions:
+          - v1alpha2
+          resources:
+          - rules
+          - attributemanifests
+          - circonuses
+          - deniers
+          - fluentds
+          - kubernetesenvs
+          - listcheckers
+          - memquotas
+          - noops
+          - opas
+          - prometheuses
+          - rbacs
+          - servicecontrols
+          - solarwindses
+          - stackdrivers
+          - cloudwatches
+          - dogstatsds
+          - statsds
+          - stdios
+          - apikeys
+          - authorizations
+          - checknothings
+          # - kuberneteses
+          - listentries
+          - logentries
+          - metrics
+          - quotas
+          - reportnothings
+          - servicecontrolreports
+          - tracespans
+          failurePolicy: Fail
+        {{- end }}
+
+  accesslist.yaml: |-
+      allowed:
+          - spiffe://cluster.local/ns/{{ .Release.Namespace }}/sa/istio-mixer-service-account
+          - spiffe://cluster.local/ns/{{ .Release.Namespace }}/sa/istio-pilot-service-account

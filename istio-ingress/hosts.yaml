@@ -10,12 +10,12 @@
 # TODO: support a wildcard cert
 # wildcardCert: example.com
 
-domain: example.com
+domain: istio.webinf.info
 
 hosts:
 - name: prom
-  dest: prometheus.istio-telemetry.svc.cluster.local
   port: 9090
+  dest: prometheus.istio-telemetry.svc.cluster.local
 
 - name: grafana
   dest: grafana.istio-telemetry.svc.cluster.local
@@ -68,4 +68,5 @@ hosts:
 tcp:
 - port: 8000
   name: tcp-iperf3
+
 

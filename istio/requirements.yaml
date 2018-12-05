@@ -5,12 +5,6 @@ dependencies:
   - name: nodeagent
     version: 1.1.0
     condition: nodeagent.enabled
-  - name: galley
-    version: 1.1.0
-    condition: galley.enabled
-  - name: istiocoredns
-    version: 1.1.0
-    condition: istiocoredns.enabled
   - name: certmanager
     version: 1.1.0
     condition: certmanager.enabled

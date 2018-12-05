@@ -1,86 +1,16 @@
 #
-# Gateways Configuration, refer to the charts/gateways/values.yaml
-# for detailed configuration
-#
-gateways:
-  enabled: true
-
-#
-# sidecar-injector webhook configuration, refer to the
-# charts/sidecarInjectorWebhook/values.yaml for detailed configuration
-#
-sidecarInjectorWebhook:
-  enabled: true
-
-#
-# galley configuration, refer to charts/galley/values.yaml
-# for detailed configuration
-#
-galley:
-  enabled: true
-
-#
-# mixer configuration
-#
-mixer:
-  policy:
-    enabled: true
-  telemetry:
-    enabled: true
-
-#
-# pilot configuration
-#
-pilot:
-  enabled: true
-  traceSampling: 1.0
-
-#
 # security configuration
 #
 security:
+  enabled: true
+
+certmanager:
   enabled: true
 
 #
 # nodeagent configuration
 #
 nodeagent:
-  enabled: false
-
-#
-# ingress configuration
-#
-ingress:
-  enabled: false
-
-#
-# addon grafana configuration
-#
-grafana:
-  enabled: false
-
-#
-# addon prometheus configuration
-#
-prometheus:
-  enabled: true
-
-#
-# addon servicegraph configuration
-#
-servicegraph:
-  enabled: false
-
-#
-# addon jaeger tracing configuration
-#
-tracing:
-  enabled: false
-
-#
-# addon kiali tracing configuration
-#
-kiali:
   enabled: false
 
 #
@@ -91,11 +21,6 @@ kiali:
 istio_cni:
   enabled: false
 
-# addon Istio CoreDNS configuration
-#
-istiocoredns:
-  enabled: false
-
 # Common settings used among istio subcharts.
 global:
   # Default hub for Istio images.
@@ -104,7 +29,7 @@ global:
   hub: gcr.io/istio-release
 
   # Default tag for Istio images.
-  tag: master-latest-daily
+  tag: release-1.1-latest-daily
 
   k8sIngress:
     enabled: false
@@ -314,6 +239,7 @@ global:
     connectUsingGateway: false
 
   # A minimal set of requested resources to applied to all deployments so that
+  # Horizontal Pod Autoscaler will be able to function (if set).
   # Horizontal Pod Autoscaler will be able to function (if set).
   # Each component can overwrite these default values by adding its own resources
   # block in the relevant section below and setting the desired resources values.

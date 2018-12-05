@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
 
+# Allow setting some common per user env.
+if [ -f $HOME/.istio.rc ]; then
+    source $HOME/.istio.rc
+fi
+
+ISTIO_CONFIG=${ISTIO_CONFIG:-user-values.yaml}
+
+
+HUB=${HUB:-grc.io/istio-release}
+
+# TAGs will default to 'BRANCH-latest-daily'
+
 # Upgrade all components
 function upgrade_all() {
     _helm_all upgrade
@@ -12,6 +24,15 @@ function install_all() {
 
 # Run install or upgrade helm.
 # The namespace will match the deployment name.
+#
+# Params
+# 1. command - install | upgrade | delete
+# 2. namespace - will also be used as chart name
+# 3. chart_directory
+# 4. any other options
+#
+# Env: HUB
+# You can specify --set global.tag=$TAG to override the chart's default.
 function helm_cmd() {
     local upg=$1
     shift
@@ -19,56 +40,78 @@ function helm_cmd() {
     shift
 
     # --set global.tag=$TAG --set global.hub=$HUB
+    local cfg="-f $ISTIO_CONFIG"
+    if [ -f $HOME/.istio-values.yaml ]; then
+        cfg="$cfg -f $HOME/.istio-values.yaml"
+    fi
 
     if [ "$upg" == "upgrade" ] ; then
-        echo helm upgrade $n $* --set debug=debug
-        helm upgrade $n $* --set debug=debug
+        echo helm upgrade $n $cfg $* --set global.hub=$HUB
+        helm upgrade $n $* $cfg --set global.hub=$HUB
     elif [ "$upg" == "delete" ] ; then
         helm delete --purge $n
     else
-        echo helm install --namespace $n -n $n $*
-        helm install --namespace $n -n $n $*
+        echo helm install --namespace $n -n $n $cfg --set global.hub=$HUB $*
+        helm install --namespace $n -n $n $cfg --set global.hub=$HUB $*
     fi
 }
 
-# Components to install
+# Function to install or upgrade all components, with 2 versions, for testing and demo
 function _helm_all() {
     # upgrade or install or delete
     local upg=$1
     shift
 
+    # Istio 11, auth enabled, defaults
     helm_cmd $upg istio-pilot11 istio-control $*
-    helm_cmd $upg istio-pilot10 istio-control --set global.tag=release-1.0-latest-daily $*
 
-    helm_cmd $upg istio-egress istio-egress $*
-    helm_cmd $upg istio-egresstest istio-egress --set global.tag=master-latest-daily \
-        --set zvpn.suffix=v10.webinf.info $*
+    # Use the new templates to install Istio 1.0 in a dedicated namespace.
+    helm_cmd $upg istio-pilot10 istio-control --set global.istio10=true --set global.tag=release-1.0-latest-daily $*
+
+    # Istio egress gateway, 1.1
+    helm_cmd $upg istio-egress istio-egress --set zvpn.suffix=v10.webinf.info $*
 
     # Each environment namespace has an injector config
     # Custom hub (for extra debug)
-    helm_cmd $upg istio-env11 istio-sidecar-injector --set global.hub=costinm
+    # This is just a sidecar injector, which can be targetted by labeling the namespace.
+    # Normally control plane runs an injector as well, but it's possible to create custom settings.
+    helm_cmd $upg istio-env11 istio-control/charts/istio-sidecar-injector
+
+    helm_ingress $upg $*
 
     #helm_cmd $upg istio-ingress-12 --set global.tag=master-latest-daily \
     #    --set zvpn.suffix=v10.webinf.info $*
-    helm_ingress $upg $*
 
+    # 1.1 telemetry
     helm_cmd $upg istio-telemetry istio-telemetry $*
+
+    # 1.1 policy
+    helm_cmd install istio-policy istio-policy
+
+    # TODO: test 1.0 policy and telemetry side-by-side
+    # or install istio 1.0 in istio-system and install the rest on separate namespaces
 }
 
+# Upgrade or install the current and previous version of ingress.
 function helm_ingress() {
     # upgrade or install or delete
     local upg=$1
     shift
 
     # TODO: customize test domains for each ingress namespace (move to separate function )
+
+    # Normal 1.1 ingress. Defaults to istio-pilot11 control plane.
     helm_cmd $upg istio-ingress istio-ingress \
         --set domain=w11.istio.webinf.info \
         --values istio-ingress/hosts.yaml $*
+
+    # 1.0 ingress. Uses istio-pilot10 control plane settings and version.
     helm_cmd $upg istio-ingress-10 istio-ingress --set global.tag=release-1.0-latest-daily \
         --set domain=w10.istio.webinf.info \
         --values istio-ingress/hosts.yaml $* \
         --set global.istioNamespace=istio-pilot10  \
         --set zvpn.enabled=false $*
+
     #helm_cmd $upg istio-ingress-12 --set global.tag=master-latest-daily \
     #    --set zvpn.suffix=v10.webinf.info $*
 

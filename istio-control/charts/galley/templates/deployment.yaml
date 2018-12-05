@@ -4,10 +4,7 @@ metadata:
   name: istio-galley
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "galley.name" . }}
-    chart: {{ template "galley.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    app: galley
     istio: galley
 spec:
   replicas: {{ .Values.replicaCount }}
@@ -18,11 +15,7 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ template "galley.name" . }}
-        chart: {{ template "galley.chart" . }}
-        heritage: {{ .Release.Service }}
-        release: {{ .Release.Name }}
-        version: {{ .Chart.Version }}
+        app: galley
         istio: galley
       annotations:
         sidecar.istio.io/inject: "false"
@@ -42,6 +35,17 @@ spec:
           - containerPort: 9901
           command:
           - /usr/local/bin/galley
+  {{- if .Values.global.istio10 }}
+          - validator
+          - --deployment-namespace={{ .Release.Namespace }}
+          - --caCertFile=/etc/istio/certs/root-cert.pem
+          - --tlsCertFile=/etc/istio/certs/cert-chain.pem
+          - --tlsKeyFile=/etc/istio/certs/key.pem
+          - --healthCheckInterval=1s
+          - --healthCheckFile=/health
+          - --webhook-config-file
+          - /etc/istio/config/validatingwebhookconfiguration.yaml
+  {{- else }}
           - --meshConfigFile=/etc/istio/mesh-config/mesh
           - --caCertFile=/etc/istio/certs/root-cert.pem
           - --tlsCertFile=/etc/istio/certs/cert-chain.pem
@@ -57,6 +61,7 @@ spec:
 {{- end }}
           - --validation-webhook-config-file
           - /etc/istio/config/validatingwebhookconfiguration.yaml
+    {{- end }}
           volumeMounts:
           - name: certs
             mountPath: /etc/istio/certs

@@ -33,7 +33,7 @@ spec:
 {{- if contains "/" .Values.image }}
           image: "{{ .Values.image }}"
 {{- else }}
-          image: "{{ .Values.global.hub | default "gcr.io/istio-release" }}/{{ .Values.image | default "pilot" }}:{{ .Values.global.tag | default "master-latest-daily" }}"
+          image: "{{ .Values.global.hub | default "gcr.io/istio-release" }}/{{ .Values.image | default "pilot" }}:{{ .Values.global.tag | default "release-1.1-latest-daily" }}"
 {{- end }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy | default "Always" }}
           args:
@@ -115,7 +115,7 @@ spec:
 {{- if contains "/" .Values.global.proxy.image }}
           image: "{{ .Values.global.proxy.image }}"
 {{- else }}
-          image: "{{ .Values.global.hub | default "gcr.io/istio-release" }}/{{ .Values.global.proxy.image | default "proxyv2" }}:{{ .Values.global.tag | default "master-latest-daily" }}"
+          image: "{{ .Values.global.hub | default "gcr.io/istio-release" }}/{{ .Values.global.proxy.image | default "proxyv2" }}:{{ .Values.global.tag | default "release-1.1-latest-daily" }}"
 {{- end }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           ports:

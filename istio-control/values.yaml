@@ -16,9 +16,10 @@ resources:
     cpu: 500m
     memory: 2048Mi
 
-
+# TODO: remove this, only used for testing, need real config
 env:
   GODEBUG: gctrace=2
+  DEFAULT_NAMESPACE_DEPENDENCIES: istio-system
 
 cpu:
   targetAverageUtilization: 80
@@ -79,6 +80,9 @@ global:
   hub: gcr.io/istio-release
   tag: release-1.1-latest-daily
 
+  mtls:
+    enabled: true
+
   # IF true, no calls to istio-policy will be made
   disablePolicyChecks: false
 
@@ -108,3 +112,7 @@ global:
     udsPath: ""
     enableTokenMount: false
 
+  arch:
+    amd64: 2
+    s390x: 2
+    ppc64le: 2

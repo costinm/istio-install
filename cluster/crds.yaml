@@ -5,8 +5,6 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: virtualservices.networking.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: istio-pilot
     chart: istio
@@ -29,8 +27,6 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: destinationrules.networking.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: istio-pilot
     chart: istio
@@ -53,8 +49,6 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: serviceentries.networking.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: istio-pilot
     chart: istio
@@ -77,9 +71,6 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: gateways.networking.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
-    "helm.sh/hook-weight": "-5"
   labels:
     app: istio-pilot
     chart: istio
@@ -101,8 +92,6 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: envoyfilters.networking.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: istio-pilot
     chart: istio
@@ -124,8 +113,6 @@ kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: clusterrbacconfigs.rbac.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: istio-pilot
     istio: rbac
@@ -151,8 +138,6 @@ kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: policies.authentication.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: istio-citadel
     chart: istio
@@ -174,8 +159,6 @@ kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: meshpolicies.authentication.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: istio-citadel
     chart: istio
@@ -201,8 +184,6 @@ kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: httpapispecbindings.config.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: istio-mixer
     chart: istio
@@ -224,8 +205,6 @@ kind: CustomResourceDefinition
 apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: httpapispecs.config.istio.io
-  annotations:
-    "helm.sh/hook": crd-install
   labels:
     app: istio-mixer
     chart: istio
@@ -248,7 +227,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: quotaspecbindings.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: istio-mixer
     chart: istio
@@ -271,7 +250,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: quotaspecs.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: istio-mixer
     chart: istio
@@ -296,7 +275,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: rules.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: istio.io.mixer
@@ -322,7 +301,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: attributemanifests.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: istio.io.mixer
@@ -348,7 +327,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: bypasses.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: bypass
@@ -374,7 +353,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: circonuses.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: circonus
@@ -400,7 +379,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: deniers.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: denier
@@ -426,7 +405,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: fluentds.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: fluentd
@@ -452,7 +431,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: kubernetesenvs.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: kubernetesenv
@@ -478,7 +457,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: listcheckers.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: listchecker
@@ -504,7 +483,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: memquotas.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: memquota
@@ -530,7 +509,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: noops.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: noop
@@ -556,7 +535,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: opas.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: opa
@@ -582,7 +561,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: prometheuses.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: prometheus
@@ -608,7 +587,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: rbacs.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: rbac
@@ -634,7 +613,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: redisquotas.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: redisquota
@@ -657,7 +636,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: servicecontrols.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: servicecontrol
@@ -684,7 +663,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: signalfxs.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: signalfx
@@ -710,7 +689,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: solarwindses.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: solarwinds
@@ -736,7 +715,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: stackdrivers.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: stackdriver
@@ -762,7 +741,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: cloudwatches.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: cloudwatch
@@ -785,7 +764,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: dogstatsds.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: dogstatsd
@@ -808,7 +787,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: statsds.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: statsd
@@ -834,7 +813,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: stdios.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: stdio
@@ -860,7 +839,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: apikeys.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: apikey
@@ -886,7 +865,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: authorizations.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: authorization
@@ -912,7 +891,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: checknothings.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: checknothing
@@ -938,7 +917,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: kuberneteses.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: adapter.template.kubernetes
@@ -964,7 +943,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: listentries.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: listentry
@@ -990,7 +969,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: logentries.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: logentry
@@ -1016,7 +995,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: edges.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: edge
@@ -1042,7 +1021,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: metrics.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: metric
@@ -1068,7 +1047,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: quotas.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: quota
@@ -1094,7 +1073,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: reportnothings.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: reportnothing
@@ -1120,7 +1099,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: servicecontrolreports.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: servicecontrolreport
@@ -1146,7 +1125,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: tracespans.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: tracespan
@@ -1172,7 +1151,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: rbacconfigs.rbac.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: istio.io.mixer
@@ -1198,7 +1177,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: serviceroles.rbac.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: istio.io.mixer
@@ -1224,7 +1203,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: servicerolebindings.rbac.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: istio.io.mixer
@@ -1249,7 +1228,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: adapters.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: adapter
@@ -1274,7 +1253,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: instances.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: instance
@@ -1299,7 +1278,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: templates.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: template
@@ -1324,7 +1303,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 metadata:
   name: handlers.config.istio.io
   annotations:
-    "helm.sh/hook": crd-install
+
   labels:
     app: mixer
     package: handler
