@@ -12,21 +12,23 @@ of 'prod' can be different than the admin of 'experiments'.
 
 The profile is selected by labeling the namespace or pod annotations.
 
+CRDs must be created first with 'helmctl apply -f cluster' (until an operator
+is added to istio-system)
+
 Major components:
 
-1. istio-system - will be left with only CRDs and possibly citadel (master secret).
-Singleton.
+1. istio-system - Singleton, includes citadel (master secret), certmanager, CNI, nodeagent.
+This must be locked down and restricted. Can be omitted if alternative way to provision 
+certificates and alternative SDS is in place. 
 
-1. istio-control-$PROFILE - pilot, possibly sidecar injector
+1. istio-control-$PROFILE - pilot, galley, sidecar injector, DNS
  
-1. istio-config - galley
+1. istio-ingress-$PROFILE - each ingress gateway will handle one or more IPs and
+hosts, their certificates and control the routing for its domains to app namespaces.
 
 1. istio-telemetry-$PROFILE - mixer telemetry, possibly prometheus
 
 1. istio-policy-$PROFILE - mixer policy.
-
-1. istio-ingress-$PROFILE - each ingress gateway will handle one or more IPs and
-hosts, their certificates and control the routing for its domains to app namespaces.
 
 1. istio-egress-$PROFILE - install if you want all outgoing traffic to be controlled.
 When namespace isolation is available, different apps can use different egress

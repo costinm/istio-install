@@ -1,0 +1,2 @@
+# Custom file, specified by the user with all the overrides.
+# ISTIO_CONFIG env can point to a different file.

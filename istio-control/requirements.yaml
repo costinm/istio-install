@@ -2,3 +2,9 @@ dependencies:
   - name: galley
     version: 1.1.0
     condition: galley.enabled
+  - name: istiocoredns
+    version: 1.1.0
+    condition: dns.enabled
+  - name: sidecarInjectorWebhook
+    version: 1.1.0
+    condition: injector.enabled
