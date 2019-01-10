@@ -38,6 +38,7 @@ function helm_cmd() {
     shift
     local n=$1
     shift
+    local ns=${NAMESPACE:-$n}
 
     # --set global.tag=$TAG --set global.hub=$HUB
     local cfg="-f $ISTIO_CONFIG"
@@ -51,8 +52,8 @@ function helm_cmd() {
     elif [ "$upg" == "delete" ] ; then
         helm delete --purge $n
     else
-        echo helm install --namespace $n -n $n $cfg --set global.hub=$HUB $*
-        helm install --namespace $n -n $n $cfg --set global.hub=$HUB $*
+        echo helm install --namespace $ns -n $n $cfg --set global.hub=$HUB $*
+        helm install --namespace $ns -n $n $cfg --set global.hub=$HUB $*
     fi
 }
 
@@ -77,7 +78,7 @@ function _helm_all() {
     # Normally control plane runs an injector as well, but it's possible to create custom settings.
     helm_cmd $upg istio-env11 istio-control/charts/istio-sidecar-injector
 
-    helm_ingress $upg $*
+    install_ingress $upg $*
 
     #helm_cmd $upg istio-ingress-12 --set global.tag=master-latest-daily \
     #    --set zvpn.suffix=v10.webinf.info $*
@@ -86,14 +87,30 @@ function _helm_all() {
     helm_cmd $upg istio-telemetry istio-telemetry $*
 
     # 1.1 policy
-    helm_cmd install istio-policy istio-policy
+    helm_cmd $upg istio-policy istio-policy
 
     # TODO: test 1.0 policy and telemetry side-by-side
     # or install istio 1.0 in istio-system and install the rest on separate namespaces
 }
 
+# Install just node agent, in istio-system
+function install_nodeagent() {
+    local upg=$1
+    shift
+
+    NAMESPACE=istio-system helm_cmd $upg nodeagent istio-system/charts/nodeagent
+}
+
+# Install just CNI, in istio-system
+function install_cni() {
+    local upg=$1
+    shift
+
+    NAMESPACE=istio-system helm_cmd $upg cni istio-system/charts/istio-cni
+}
+
 # Upgrade or install the current and previous version of ingress.
-function helm_ingress() {
+function install_ingress() {
     # upgrade or install or delete
     local upg=$1
     shift
@@ -147,6 +164,10 @@ function exec-ingress() {
 
 function logs-inject() {
     _klog istio=sidecar-injector sidecar-injector-webhook istio-env11 $*
+}
+
+function logs-inject11() {
+    _klog istio=sidecar-injector sidecar-injector-webhook istio-pilot11 $*
 }
 
 function logs-pilot11() {
@@ -275,4 +296,28 @@ function localPilot() {
     # -registries
     # -clusterRegistriesNamespace
     #
+}
+
+# Fetch the certs from a namespace, save to /etc/cert
+# Same process used for mesh expansion, can also be used for dev machines.
+function getCerts() {
+    local NS=${1:-default}
+    local SA=${2:-default}
+
+    kubectl get secret istio.$SA -n $NS -o "jsonpath={.data['key\.pem']}" | base64 -d > /etc/certs/key.pem
+    kubectl get secret istio.$SA -n $NS -o "jsonpath={.data['cert-chain\.pem']}" | base64 -d > /etc/certs/cert-chain.pem
+    kubectl get secret istio.$SA -n $NS -o "jsonpath={.data['root-cert\.pem']}" | base64 -d > /etc/certs/root-cert.pem
+}
+
+# For debugging, get the istio CA. Can be used with openssl or other tools to generate certs.
+function getCA() {
+    kubectl get secret istio-ca-secret -n istio-system -o "jsonpath={.data['ca-cert\.pem']}" | base64 -d > /etc/certs/ca-cert.pem
+    kubectl get secret istio-ca-secret -n istio-system -o "jsonpath={.data['ca-key\.pem']}" | base64 -d > /etc/certs/ca-key.pem
+}
+
+function istio_status11() {
+    echo "1.0 sidecars"
+    istioctl -i istio-pilot10 proxy-status
+    echo "1.1 sidecars"
+    istioctl -i istio-pilot11 proxy-status
 }

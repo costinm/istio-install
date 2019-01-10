@@ -87,6 +87,10 @@ spec:
                 fieldPath: metadata.namespace
           - name: PILOT_CACHE_SQUASH
             value: "5"
+          - name: WAIT_ACK
+            value: "1"
+          - name: THREAD_PER_NODE
+            value: "1"
           {{- if .Values.env }}
           {{- range $key, $val := .Values.env }}
           - name: {{ $key }}

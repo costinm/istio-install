@@ -10,7 +10,7 @@
 # TODO: support a wildcard cert
 # wildcardCert: example.com
 
-domain: istio.webinf.info
+domain: w11.istio.webinf.info
 
 hosts:
 - name: prom

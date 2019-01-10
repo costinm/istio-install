@@ -72,6 +72,8 @@ spec:
           - name: mesh-config
             mountPath: /etc/istio/mesh-config
             readOnly: true
+{{- if not .Values.global.istio10 }}
+
           livenessProbe:
             exec:
               command:
@@ -90,6 +92,7 @@ spec:
                 - --interval=10s
             initialDelaySeconds: 5
             periodSeconds: 5
+{{- end }}
           resources:
 {{- if .Values.resources }}
 {{ toYaml .Values.resources | indent 12 }}

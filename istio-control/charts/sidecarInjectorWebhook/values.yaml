@@ -11,6 +11,49 @@
 # a 'prod' environment using latest stable version of pilot and telemetry
 # with minimal logging.
 
+
+## Requires citadel istio-sidecar-injector-service-account.istio-env11:istio-sidecar-injector.istio-env11.svc
+
+# sidecar-injector webhook configuration.
+# If down, new pods will fail to start or restart for a short time, but they will
+# retry.
+replicaCount: 1
+
+# This enables injection of sidecar in all namespaces,
+# with the exception of namespaces with "istio-injection:disabled" annotation
+# Only one environment should have this enabled.
+enableNamespacesByDefault: false
+
+# If set, no iptable init will be added. It assumes CNI is installed.
+# TODO: rename to 'enableIptables' or add 'interceptionMode: CNI'
+istio_cni:
+  enabled: false
+
+# Debug level for envoy and pilot-agent. Can be set to 'debug' for very verbose
+# messages.
+debug: info
+
+# Mesh config values affecting injection. See the api - this is just the subset
+# needed for injection.
+mesh:
+
+  # TCP connection timeout when connecting to pilot
+  connectTimeout: 10s
+
+  # These settings that determine how long an old Envoy
+  # process should be kept alive after an occasional reload.
+  drainDuration: 45s
+  parentShutdownDuration: 1m0s
+
+  #
+  # Set concurrency to a specific number to control the number of Proxy worker threads.
+  # If not set (default), then start worker thread for each CPU thread/core.
+  #concurrency:
+
+  interceptionMode: REDIRECT
+
+
+
 global:
   # Namespace running the control plane.
   # It is possible to use multiple Pilot instanes, for example a production
@@ -38,7 +81,7 @@ global:
     # Using the same image as the sidecar increases the init time ( larger download )
     # but reduces the startup time of the sidecar (image already fetched ) and the
     # chance the app will run without a proper sidecar.
-    image: proxyv2
+    image: proxy_init
 
   # TODO: move to injector-specific section
   proxy:
@@ -115,46 +158,4 @@ global:
     amd64: 2
     s390x: 2
     ppc64le: 2
-
-
-## Requires citadel istio-sidecar-injector-service-account.istio-env11:istio-sidecar-injector.istio-env11.svc
-
-# sidecar-injector webhook configuration.
-# If down, new pods will fail to start or restart for a short time, but they will
-# retry.
-replicaCount: 1
-
-# This enables injection of sidecar in all namespaces,
-# with the exception of namespaces with "istio-injection:disabled" annotation
-# Only one environment should have this enabled.
-enableNamespacesByDefault: false
-
-# If set, no iptable init will be added. It assumes CNI is installed.
-# TODO: rename to 'enableIptables' or add 'interceptionMode: CNI'
-istio_cni:
-  enabled: false
-
-# Debug level for envoy and pilot-agent. Can be set to 'debug' for very verbose
-# messages.
-debug: info
-
-# Mesh config values affecting injection. See the api - this is just the subset
-# needed for injection.
-mesh:
-
-  # TCP connection timeout when connecting to pilot
-  connectTimeout: 10s
-
-  # These settings that determine how long an old Envoy
-  # process should be kept alive after an occasional reload.
-  drainDuration: 45s
-  parentShutdownDuration: 1m0s
-
-  #
-  # Set concurrency to a specific number to control the number of Proxy worker threads.
-  # If not set (default), then start worker thread for each CPU thread/core.
-  #concurrency:
-
-  interceptionMode: REDIRECT
-
 

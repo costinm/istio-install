@@ -9,45 +9,6 @@ metadata:
   namespace: istio-system
 data:
   envoy.yaml:
-    # You can include a custom bootstrap envoy yaml, updating the path in the 'args'
-    # Ingress configuration using Envoy v2 bootstrap.
-    #
-    # Has 'zero vpn' port forwarding for the control plane - allowing machines outside the VPN with proper certificates
-    # to connect to Istio.
-    #
-    # Current config has a sample port open, exposing an internal service. This will be rolled into LDS and automatically
-    # exposed using service annotations in a future version.
-    #
-    # To customize the envoy config, create a config map and update the ingress config to use the custom envoy bootstrap
-    # from the config map.
-    #
-    # Setting up SNI in LDSv2:
-    # https://www.envoyproxy.io/docs/envoy/latest/faq/sni.html#faq-how-to-setup-sni
-    stats_config:
-      # Without this option it create a lot of regex, may run out of space.
-      use_all_default_tags: false
-
-    admin:
-      access_log_path: /dev/stdout
-      address:
-        # Only allow debugging from localhost
-        socket_address: { address: 127.0.0.1, port_value: 15000 }
-
-    dynamic_resources:
-      # LDS disabled, using manual config until LDSv2 is ready in pilot.
-      cds_config:
-         api_config_source:
-            api_type: REST_LEGACY
-            refresh_delay: 10s
-            cluster_names: [rds]
-      #Required - without it cds_config doesn't work
-      deprecated_v1:
-        sds_config:
-          api_config_source:
-                api_type: REST_LEGACY
-                refresh_delay: 10s
-                cluster_names: [rds]
-
     static_resources:
       listeners:
       - name: http
@@ -118,14 +79,7 @@ data:
               http_filters:
                 - name: envoy.router
 
-      clusters:
-      - name: rds
-        connect_timeout: 0.25s
-        type: STRICT_DNS
-        lb_policy: ROUND_ROBIN
-        hosts:
-          # TODO(costin): add TLS/15003
-          - { socket_address: { address: "istio-pilot.istio-system", port_value: 8080 }}
+
 
 ---
 {{ end }}
