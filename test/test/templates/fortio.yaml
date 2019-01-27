@@ -77,7 +77,7 @@ spec:
           - server
         resources:
           requests:
-            cpu: 800m
+            cpu: {{ .Values.fortioCPU }}
             memory: "1G"
           limits:
             cpu: 1000m

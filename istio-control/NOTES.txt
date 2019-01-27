@@ -1,7 +1,28 @@
-Installing standalone Pilot.
+Minimal control plane for Istio:
+
+- Pilot (optional): if disalbed, the "global.discoveryAddress" will be used (TODO)
+
+- Galley (optional): if disabled, "global.mcpAddresses" will be used
+
+- Sidecar injector (optional): if disabled, manual injection or other tools need to be used.
+
+It is possible to create a 'profile' if the control plane with different settings.
+The current 'default' namespace and profile is 'istio-pilot11'
+
+Sidecar injection in each profile can be selected by labeling the namespace with the appropriate profile.
+The new label is 'istio-env' and the value is the namespace where the istio-control (including injector) is installed.
+Note that it is possible to install a profile with only injector.
 
 ```
-  helm install -n pilot103 --namespace pilot103 helm/pilot/  --set global.hub=istio --set global.tag=103
-  helm install -n pilot102 --namespace pilot102 helm/pilot/  --set global.hub=istio --set global.tag=102
+    # New style, using the istio-pilot11 profile
+    kubectl create ns fortio
+    kubectl label ns fortio istio-env=istio-pilot11
 
+    # Second pilot profile
+    kubectl create ns fortio-test
+    kubectl label ns fortio istio-env=istio-pilot11-test
+
+    # Old-style, using istio-system and Istio 1.0 or 1.1 default installations.
+    kubectl create ns fortio-istio-system
+    kubectl label ns fortio istio-injection=enabled
 ```

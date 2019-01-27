@@ -1,98 +1,127 @@
+
+# The main components of an environment:
+# - location of discovery, telemetry, flags used in injecting the pod
+# - the discovery environment will also have specific settings
+
+
+# Used to override control-plane networs
+meshNetworks:
+  networks: {}
+
+#
+mixer:
+  enable: true
+
+# Install the mesh config map, generated from values.yaml.
+# If false, pilot wil use default values (by default) or user-supplied values.
+configMap: true
+
+# Controls legacy k8s ingress
+# Only one pilot profile should enable ingress support !!!
+ingress:
+  # If empty, node-port is assumed.
+  ingressService: ingressgateway
+  # DEFAULT: all Ingress resources without annotation or with istio annotation
+  # STRICT: only with istio annotation
+  # OFF: no ingress or sync.
+  ingressControllerMode: "OFF"
+  # Namespace running the ingressgateway
+  ingressNamespace: istio-ingress
+
+  # Value to set on "kubernetes.io/ingress.class" annotations to activate, if mode is STRICT
+  # This is required to be different than 'istio' if multiple ingresses are present.
+  ingressClass: istio
+
+telemetry:
+  # Will not define mixerCheckServer and mixerReportServer
+  enabled: true
+
+policy:
+  # Will not define mixerCheckServer and mixerReportServer
+  enabled: true
+
+# Components we deploy with the control plane.
 galley:
   enabled: true
+  image: galley
+  replicaCount: 1
 
-injector:
-  enabled: true
+## TODO:
+## Requires istio-system setting for
+#  citadel istio-sidecar-injector-service-account.istio-env11:istio-sidecar-injector.istio-env11.svc
 
-dns:
+# If disabled only manual kube-inject or custom injectors can be used.
+# If enabled, namespaces labeled with ... will be injected.
+# It is possible to have a control namespace with only an injector - which defines an injection profile with
+# its own settings, possibly pointing to an existing or external pilot.
+sidecarInjectorWebhook:
   enabled: true
+  # sidecar-injector webhook configuration.
+  # If down, new pods will fail to start or restart for a short time, but they will
+  # retry.
+  replicaCount: 1
+
+  # This enables injection of sidecar in all namespaces,
+  # with the exception of namespaces with "istio-injection:disabled" annotation
+  # Only one environment should have this enabled.
+  enableNamespacesByDefault: false
+
+  # If set, no iptable init will be added. It assumes CNI is installed.
+  # TODO: rename to 'enableIptables' or add 'interceptionMode: CNI'
+  istio_cni:
+    enabled: false
+
+  # Debug level for envoy and pilot-agent. Can be set to 'debug' for very verbose
+  # messages.
+  debug: info
+
+  # Mesh config values affecting injection. See the api - this is just the subset
+  # needed for injection.
+  mesh:
+
+    # TCP connection timeout when connecting to pilot
+    connectTimeout: 10s
+
+    # These settings that determine how long an old Envoy
+    # process should be kept alive after an occasional reload.
+    drainDuration: 45s
+    parentShutdownDuration: 1m0s
+
+    #
+    # Set concurrency to a specific number to control the number of Proxy worker threads.
+    # If not set (default), then start worker thread for each CPU thread/core.
+    #concurrency:
+
+    interceptionMode: REDIRECT
+
+
 
 pilot:
   enabled: true
+  replicaCount: 1
+  autoscaleMin: 1
+  autoscaleMax: 5
 
-# Settings for features (mixer component is in separate ns)
-mixer:
-  enabled: true
+  # Can be a full hub/image:tag
+  image: pilot
 
-ingress:
-  enabled: false
+  useMCP: true
 
+  # Use a sidecar for pilot
+  sidecar: false
 
-# Only used if installing pilot standalone. When imported, the global from istio
-# is used.
-global:
-  hub: gcr.io/istio-release
-  tag: release-1.1-latest-daily
+  traceSampling: 10.0
 
-  mtls:
-    enabled: true
+  # Resources for a small pilot install
+  resources:
+    requests:
+      cpu: 500m
+      memory: 2048Mi
 
-  # IF true, no calls to istio-policy will be made
-  disablePolicyChecks: false
+  # TODO: remove this, only used for testing, need real config
+  env:
+    GODEBUG: gctrace=2
+    DEFAULT_NAMESPACE_DEPENDENCIES: istio-system
 
-  policyCheckFailOpen: true
-
-  enableTracing: true
-
-  # Default setting for sidecar access logs.
-  accessLogFile: /dev/null
-
-  controlPlaneSecurityEnabled: false
-
-  k8sIngressSelector: ingress
-  configMap: true
-  meshExpansion:
-    enabled: true
-
-  proxy:
-    resources: {}
-    tracer: "none"
-    concurrency: 4
-
-  # SDS enabled. IF set to true, mTLS certificates for the sidecars will be
-  # distributed through the SecretDiscoveryService instead of using K8S secrets to mount the certificates.
-  sds:
-    enabled: false
-    udsPath: ""
-    enableTokenMount: false
-
-  arch:
-    amd64: 2
-    s390x: 2
-    ppc64le: 2
-
-  # TODO: operator or pilot code to auto-configure networks if it
-  # can discover the endpoints.
-  meshNetworks:
-    #networks: {}
-
-    networks:
-      weekly10:
-        gateways:
-        - address: 35.224.222.243
-          port: 15443
-        endpoints:
-        - fromRegistry: weekly10
-      costin11:
-        gateways:
-        - address: 35.236.6.124
-          port: 15443
-        endpoints:
-        - fromRegistry: costin11
-
-    #
-    # Example:
-    #
-    # networks:
-    #   network1:
-    #     endpoints:
-    #     - fromCidr: "192.168.0.1/24"
-    #     gateways:
-    #     - address: 1.1.1.1
-    #       port: 80
-    #   network2:
-    #     endpoints:
-    #     - fromRegistry: reg1
-    #     gateways:
-    #     - registryServiceName: reg1
-    #       port: 443
+  cpu:
+    targetAverageUtilization: 80

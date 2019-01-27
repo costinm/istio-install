@@ -30,7 +30,7 @@ spec:
           - http://fortiotls.{{ .Values.domain }}/echo?size=5000
         resources:
           requests:
-            cpu: 800m
+            cpu: {{ .Values.fortioCPU }}
             memory: "1G"
           limits:
             cpu: 1000m
@@ -65,7 +65,7 @@ spec:
           - http://fortionoistio.{{ .Values.domain }}/echo?size=5000
         resources:
           requests:
-            cpu: 800m
+            cpu: {{ .Values.fortioCPU }}
             memory: "1G"
           limits:
             cpu: 1000m
@@ -100,7 +100,7 @@ spec:
           - http://fortiomaster.{{ .Values.domain }}/echo?size=5000
         resources:
           requests:
-            cpu: 800m
+            cpu: {{ .Values.fortioCPU }}
             memory: "1G"
           limits:
             cpu: 1000m
@@ -136,7 +136,7 @@ spec:
           - http://fortio10rc1.{{ .Values.domain }}/echo?size=5000
         resources:
           requests:
-            cpu: 400m
+            cpu: {{ .Values.fortioCliCPU }}
             memory: "1G"
           limits:
             cpu: 500m
@@ -172,7 +172,7 @@ spec:
           - http://fortio080.{{ .Values.domain }}/echo?size=5000
         resources:
           requests:
-            cpu: 400m
+            cpu: {{ .Values.fortioCliCPU }}
             memory: "1G"
           limits:
             cpu: 500m
@@ -205,7 +205,7 @@ spec:
           - http://fortio-tproxy.test:8080/echo?size=5000
         resources:
           requests:
-            cpu: 400m
+            cpu: {{ .Values.fortioCliCPU }}
             memory: "1G"
           limits:
             cpu: 500m
@@ -239,7 +239,7 @@ spec:
           - http://fortiov1.test:8080/echo?size=5000
         resources:
           requests:
-            cpu: 400m
+            cpu: {{ .Values.fortioCliCPU }}
             memory: "1G"
           limits:
             cpu: 500m
@@ -273,7 +273,7 @@ spec:
           - http://fortionoistio1.test:8080/echo?size=5000
         resources:
           requests:
-            cpu: 400m
+            cpu: {{ .Values.fortioCliCPU }}
             memory: "1G"
           limits:
             cpu: 500m

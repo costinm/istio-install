@@ -10,7 +10,9 @@ metadata:
   annotations:
     checksum/config-volume: {{ template "istio.configmap.checksum" . }}
 spec:
+{{- if not .Values.autoscaleMin }}
   replicas: {{ .Values.replicaCount }}
+{{- end }}
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -38,28 +40,33 @@ spec:
           imagePullPolicy: {{ .Values.global.imagePullPolicy | default "Always" }}
           args:
           - "discovery"
-{{- if $.Values.global.proxy.discoveryDomain }}
+          - --monitoringAddr=:{{ .Values.global.monitoringPort }}
+{{- if .Values.global.proxy.discoveryDomain }}
           - --domain
-          - {{ $.Values.global.proxy.discoveryDomain }}
+          - {{ .Values.global.proxy.discoveryDomain }}
 {{- end }}
 {{- if .Values.global.oneNamespace }}
           - "-a"
           - {{ .Release.Namespace }}
 {{- end }}
-{{- if not .Values.sidecar }}
+{{- if .Values.global.controlPlaneSecurityEnabled}}
+    {{- if not .Values.sidecar }}
           - --secureGrpcAddr
           - ":15011"
+    {{- end }}
+{{- else }}
+          - --secureGrpcAddr
+          - ""
 {{- end }}
-{{- if $.Values.global.useMCP }}
-    {{- if $.Values.global.controlPlaneSecurityEnabled}}
+{{- if .Values.useMCP }}
+    {{- if .Values.global.controlPlaneSecurityEnabled}}
           - --mcpServerAddrs=mcps://istio-galley.{{ $.Release.Namespace }}.svc:9901
-          - --certFile=/etc/certs/cert-chain.pem
-          - --keyFile=/etc/certs/key.pem
-          - --networkConfig=/etc/istio/config/meshNetworks
-          - --caCertFile=/etc/certs/root-cert.pem
     {{- else }}
           - --mcpServerAddrs=mcp://istio-galley.{{ $.Release.Namespace }}.svc:9901
     {{- end }}
+{{- end }}
+{{- if .Values.global.trustDomain }}
+          - --trust-domain={{ .Values.global.trustDomain }}
 {{- end }}
           ports:
           - containerPort: 8080
@@ -85,12 +92,6 @@ spec:
               fieldRef:
                 apiVersion: v1
                 fieldPath: metadata.namespace
-          - name: PILOT_CACHE_SQUASH
-            value: "5"
-          - name: WAIT_ACK
-            value: "1"
-          - name: THREAD_PER_NODE
-            value: "1"
           {{- if .Values.env }}
           {{- range $key, $val := .Values.env }}
           - name: {{ $key }}
@@ -111,9 +112,14 @@ spec:
           - name: config-volume
             mountPath: /etc/istio/config
             optional: true
+
+{{- if .Values.global.controlPlaneSecurityEnabled}}
           - name: istio-certs
             mountPath: /etc/certs
             readOnly: true
+{{- end }}
+
+       ### Sidercar - should only be used if MTLS is enabled.
 {{- if .Values.sidecar }}
         - name: istio-proxy
 {{- if contains "/" .Values.global.proxy.image }}
@@ -129,9 +135,9 @@ spec:
           - containerPort: 15011
           args:
           - proxy
-{{- if $.Values.global.proxy.proxyDomain }}
+{{- if .Values.global.proxy.proxyDomain }}
           - --domain
-          - {{ $.Values.global.proxy.proxyDomain }}
+          - {{ .Values.global.proxy.proxyDomain }}
 {{- end }}
           - --serviceCluster
           - istio-pilot
@@ -143,6 +149,9 @@ spec:
         {{- else }}
           - --controlPlaneAuthPolicy
           - NONE
+        {{- end }}
+        {{- if .Values.global.trustDomain }}
+          - --trust-domain={{ .Values.global.trustDomain }}
         {{- end }}
           env:
           - name: POD_NAME
@@ -171,14 +180,18 @@ spec:
             mountPath: /etc/certs
             readOnly: true
 {{- end }}
+
+
       volumes:
       - name: config-volume
         configMap:
           name: istio
+{{- if .Values.global.controlPlaneSecurityEnabled}}
       - name: istio-certs
         secret:
           secretName: istio.istio-pilot-service-account
-          optional: true
+          optional: false
+{{- end }}
       affinity:
 {{- if .Values.nodeaffinity }}
       {{- include "nodeaffinity" . | indent 6 }}

@@ -1,60 +1,14 @@
-# Standalone istio ingress gateway.
-# Should be installed in a separate namespace, to minimize access to secrets.
+# A-la-carte istio ingress gateway.
+# Must be installed in a separate namespace, to minimize access to secrets.
 
-global:
-  # Default tag for Istio images.
-  hub: gcr.io/istio-release
-  #tag: master-latest-daily
-  #tag: release-1.0-latest-daily
-  tag: release-1.1-latest-daily
 
-  # Used to locate istio-pilot and validate its certificte.
-  # The new chart is defaulting to an isolated pilot
-  istioNamespace: istio-pilot11
-  # imagePullPolicy is applied to istio control plane components.
-  imagePullPolicy: Always
-
-  meshExpansion:
-    enabled: true
-  k8sIngress:
-    enabled: false
-  multiCluster:
-    connectUsingGateway: true
-  sds:
-    enabled: false
-  proxy:
-    enableCoreDump: false
-    image: proxyv2
-
-  tracer:
-    zipkin:
-      address: zipkin.istio-system:9411
-
-#externalTrafficPolicy: Local #change to Local to preserve source IP or Cluster for default behaviour or leave commented out
 ports:
-## You can add custom gateway ports
+## You can add custom gateway ports in user values overrides, but it must include those ports since helm replaces.
 - port: 80
   targetPort: 80
   name: http2
 - port: 443
   name: https
-# Example of a port to add. Remove if not needed
-- port: 31400
-  name: tcp
-### PORTS FOR UI/metrics #####
-## Disable if not needed
-- port: 15029
-  targetPort: 15029
-  name: http-kiali
-- port: 15030
-  targetPort: 15030
-  name: http2-prometheus
-- port: 15031
-  targetPort: 15031
-  name: http2-grafana
-- port: 15032
-  targetPort: 15032
-  name: http2-tracing
   # This is the port where sni routing happens
 - port: 15443
   targetPort: 15443
@@ -74,8 +28,19 @@ resources: {}
 cpu:
   targetAverageUtilization: 80
 
+# Support legacy k8s ingress.
+k8sIngress: false
+
+# Single server certificate supported, not tested
+k8sIngressHttps: false
+
 # Debug level for envoy. Can be set to 'debug'
 debug: info
+
+# If true, don't auto-generate a Service object.
+# User can manually create one, with selector "app:ingressgateway" and any settings he needs.
+# Note that user needs to maintain the list of ports in the manual Service.
+customService: false
 
 drainDuration: 45s
 connectTimeout: 10s

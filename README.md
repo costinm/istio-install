@@ -1,4 +1,4 @@
-# istio-helm
+# istio-install
 
 Fork of istio helm templates, with additional modularity.
 

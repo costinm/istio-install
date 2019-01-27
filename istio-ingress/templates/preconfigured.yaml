@@ -1,4 +1,4 @@
-{{- if .Values.global.k8sIngress.enabled }}
+{{- if .Values.k8sIngress }}
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -8,7 +8,7 @@ metadata:
     app: ingressgateway
 spec:
   selector:
-    istio: {{ .Release.Namespace }}
+    istio: ingressgateway
   servers:
   - port:
       number: 80
@@ -16,7 +16,7 @@ spec:
       name: http
     hosts:
     - "*"
-{{ if .Values.global.k8sIngress.enableHttps }}
+{{ if .Values.k8sIngressHttps }}
   - port:
       number: 443
       protocol: HTTPS
@@ -30,33 +30,6 @@ spec:
 {{ end }}    
 ---    
 {{ end }}
-
-{{- if .Values.global.meshExpansion.enabled }}
-apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
-metadata:
-  name: meshexpansion-gateway
-  namespace: {{ .Release.Namespace }}
-  labels:
-    app: ingressgateway
-spec:
-  selector:
-    istio: {{ .Release.Namespace }}
-  servers:
-  - port:
-      number: 15011
-      protocol: TCP
-      name: tcp-pilot
-    hosts:
-    - "*"
-  - port:
-      number: 8060
-      protocol: TCP
-      name: tcp-citadel
-    hosts:
-    - "*"
----
-{{- end }}
 
 {{- if .Values.zvpn }}
 ---

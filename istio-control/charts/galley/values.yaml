@@ -1,5 +1,0 @@
-#
-# galley configuration
-#
-replicaCount: 1
-image: galley

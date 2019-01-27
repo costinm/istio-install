@@ -5,14 +5,14 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: ingressgateway
-    istio: {{ .Release.Namespace }}
+    istio: ingressgateway
 spec:
   replicas: {{ .Values.replicaCount }}
   template:
     metadata:
       labels:
         app: ingressgateway
-        istio: {{ .Release.Namespace }}
+        istio: ingressgateway
       annotations:
         sidecar.istio.io/inject: "false"
         scheduler.alpha.kubernetes.io/critical-pod: ""
@@ -26,10 +26,10 @@ spec:
 {{- if .Values.global.proxy.enableCoreDump }}
       initContainers:
         - name: enable-core-dump
-{{- if contains "/" .Values.global.proxy_init.image }}
-          image: "{{ .Values.global.proxy_init.image }}"
+{{- if contains "/" .Values.global.proxy.image }}
+          image: "{{ .Values.global.proxy.image }}"
 {{- else }}
-          image: "{{ .Values.global.hub }}/{{ .Values.global.proxy_init.image | default "proxy_init" }}:{{ .Values.global.tag }}"
+          image: "{{ .Values.global.hub }}/{{ .Values.global.proxy.image | default "proxyv2" }}:{{ .Values.global.tag }}"
 {{- end }}
           imagePullPolicy: IfNotPresent
           command:
@@ -45,7 +45,7 @@ spec:
 {{- if contains "/" .Values.global.proxy.image }}
           image: "{{ .Values.global.proxy.image }}"
 {{- else }}
-          image: "{{ .Values.global.hub }}/{{ .Values.global.proxy.image }}:{{ .Values.global.tag }}"
+          image: "{{ .Values.global.hub }}/{{ .Values.global.proxy.image | default "proxyv2" }}:{{ .Values.global.tag }}"
 {{- end }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy | default "Always" }}
           ports:
@@ -60,7 +60,11 @@ spec:
               name: http-envoy-prom
           args:
           - proxy
+{{- if .Values.k8sIngress }}
+          - ingress
+{{- else }}
           - router
+{{- end }}
 {{- if .Values.global.proxy.proxyDomain }}
           - --domain
           - {{ .Values.global.proxy.proxyDomain }}
@@ -176,7 +180,7 @@ spec:
           name: {{ .configMapName | quote }}
           optional: true
       {{- end }}
-{{- if .Values.global.arch }}}
+{{- if .Values.global.arch }}
       affinity:
       {{- include "nodeaffinity" $ | indent 6 }}
 {{- end }}

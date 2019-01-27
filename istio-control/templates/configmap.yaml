@@ -1,4 +1,4 @@
-{{- if .Values.global.configMap }}
+{{- if .Values.configMap }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,8 +8,10 @@ data:
 
   meshNetworks: |-
     # Network config
-    {{ toYaml .Values.meshNetworks | indent 4 }}
+{{ toYaml .Values.meshNetworks | indent 4 }}
 
+  values.yaml: |-
+{{ toYaml .Values | indent 4 }}
 
   mesh: |-
     # Set the following variable to true to disable policy checks by the Mixer.
@@ -23,14 +25,19 @@ data:
     # Set accessLogFile to empty string to disable access log.
     accessLogFile: "{{ .Values.global.proxy.accessLogFile }}"
     #
-    # Deprecated: mixer is using EDS
-    {{- if .Values.mixer.enabled }}
+    {{- if .Values.telemetry.enabled }}
     {{- if .Values.global.controlPlaneSecurityEnabled }}
-    mixerCheckServer: istio-policy.{{ .Values.policyNamespace }}.svc.cluster.local:15004
-    mixerReportServer: istio-telemetry.{{ .Values.telemetryNamespace }}.svc.cluster.local:15004
+    mixerReportServer: istio-telemetry.{{ .Values.global.telemetryNamespace }}.svc.cluster.local:15004
     {{- else }}
-    mixerCheckServer: istio-policy.{{ .Values.policyNamespace }}.svc.cluster.local:9091
-    mixerReportServer: istio-telemetry.{{ .Values.telemetryNamespace }}.svc.cluster.local:9091
+    mixerReportServer: istio-telemetry.{{ .Values.global.telemetryNamespace }}.svc.cluster.local:9091
+    {{- end }}
+    {{- end }}
+
+    {{- if .Values.policy.enabled }}
+    {{- if .Values.global.controlPlaneSecurityEnabled }}
+    mixerCheckServer: istio-policy.{{ .Values.global.policyNamespace }}.svc.cluster.local:15004
+    {{- else }}
+    mixerCheckServer: istio-policy.{{ .Values.global.policyNamespace }}.svc.cluster.local:9091
     {{- end }}
 
     # policyCheckFailOpen allows traffic in cases when the mixer policy service cannot be reached.
@@ -38,13 +45,10 @@ data:
     policyCheckFailOpen: {{ .Values.global.policyCheckFailOpen }}
     {{- end }}
 
-    {{- if .Values.ingress.enabled }}
     # This is the k8s ingress service name, update if you used a different name
-    ingressService: istio-{{ .Values.global.k8sIngressSelector }}
-    {{ else }}
-    ingressService: istio-ingress
-    ingressControllerMode: "OFF"
-    {{- end }}
+    ingressService: "{{ .Values.ingress.ingressService }}"
+    ingressControllerMode: "{{ .Values.ingress.ingressControllerMode }}"
+    ingressClass: "{{ .Values.ingress.ingressClass }}"
 
     # Unix Domain Socket through which envoy communicates with NodeAgent SDS to get
     # key/cert for mTLS. Use secret-mount files instead of SDS if set to empty.

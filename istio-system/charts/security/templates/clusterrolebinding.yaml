@@ -1,17 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: istio-citadel-{{ .Release.Namespace }}
-  labels:
-    app: {{ template "security.name" . }}
-    chart: {{ template "security.chart" . }}
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+  name: istio-citadel11-{{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: istio-citadel-{{ .Release.Namespace }}
+  name: istio-citadel11-{{ .Release.Namespace }}
 subjects:
   - kind: ServiceAccount
-    name: istio-citadel-service-account
+    name: istio-citadel11-service-account
     namespace: {{ .Release.Namespace }}

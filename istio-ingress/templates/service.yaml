@@ -1,3 +1,4 @@
+{{- if not .Values.customService }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,9 +10,6 @@ metadata:
     {{- end }}
   labels:
     app: ingressgateway
-    chart: ingressgateway
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
 spec:
 {{- if .Values.loadBalancerIP }}
   loadBalancerIP: "{{ .Values.loadBalancerIP }}"
@@ -27,12 +25,14 @@ spec:
   selector:
     app: ingressgateway
   ports:
+
     {{- range $key, $val := .Values.ports }}
     -
       {{- range $pkey, $pval := $val }}
       {{ $pkey}}: {{ $pval }}
       {{- end }}
     {{- end }}
+
     {{- if $.Values.global.meshExpansion.enabled }}
     {{- range $key, $val := .Values.meshExpansionPorts }}
     -
@@ -41,4 +41,10 @@ spec:
       {{- end }}
     {{- end }}
     {{- end }}
+  {{ range $app := .Values.ingressPorts }}
+    -
+      port: {{ $app.port }}
+      name: {{ $app.name }}
+  {{- end }}
 ---
+{{ end }}

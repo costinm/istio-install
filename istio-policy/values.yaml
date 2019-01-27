@@ -1,3 +1,20 @@
+image: mixer
+
+env:
+  GODEBUG: gctrace=2
+
+replicaCount: 1
+autoscaleEnabled: true
+autoscaleMin: 1
+autoscaleMax: 5
+cpu:
+  targetAverageUtilization: 80
+
+podAnnotations: {}
+
+# Global has common values - typically shared across all istio components.
+# Profiles may customize the global section - for example use different proxy inages, etc.
+# TODO: eliminate all values that are not used by policy (tool?)
 global:
   hub: gcr.io/istio-release
   tag: release-1.1-latest-daily
@@ -131,18 +148,4 @@ global:
     s390x: 2
     ppc64le: 2
 
-
-image: mixer
-
-env:
-  GODEBUG: gctrace=2
-
-replicaCount: 1
-autoscaleEnabled: true
-autoscaleMin: 1
-autoscaleMax: 5
-cpu:
-  targetAverageUtilization: 80
-
-podAnnotations: {}
 

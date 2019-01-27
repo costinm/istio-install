@@ -1,0 +1,115 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: pilotingress
+  namespace: istio-ingress
+  annotations:
+    kubernetes.io/ingress.class: istio
+spec:
+  rules:
+  - host: pilotingress.c11i.istio.webinf.info
+    http:
+      paths:
+      - path: /.*
+        backend:
+          serviceName: istio-pilot
+          servicePort: 8080
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: pilotingressctl
+  namespace: istio-ingress
+  # No annotation - should still be picked up by istio-ingress
+spec:
+  rules:
+    - host: pilotingressctl.c11i.istio.webinf.info
+      http:
+        paths:
+          - path: /.*
+            backend:
+              serviceName: istio-pilot
+              servicePort: 9093
+
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: pilotingress
+  namespace: istio-ingress-insecure
+  annotations:
+    kubernetes.io/ingress.class: istio-insecure
+spec:
+  rules:
+    - host: pilotingress.c11is.istio.webinf.info
+      http:
+        paths:
+          - path: /.*
+            backend:
+              serviceName: istio-pilot
+              servicePort: 8080
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: pilotingressctl
+  namespace: istio-ingress-insecure
+  annotations:
+    kubernetes.io/ingress.class: istio-insecure
+spec:
+  rules:
+    - host: pilotingressctl.c11is.istio.webinf.info
+      http:
+        paths:
+          - path: /.*
+            backend:
+              serviceName: istio-pilot
+              servicePort: 9093
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: grafana
+  namespace: istio-telemetry
+  annotations:
+    kubernetes.io/ingress.class: istio-insecure
+spec:
+  rules:
+    - host: ingress-grafana.c11is.istio.webinf.info
+      http:
+        paths:
+          - path: /.*
+            backend:
+              serviceName: grafana
+              servicePort: 3000
+---
+
+### Access prom via secure gateway, but using an explicit DR ( it's not encrypted )
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: prometheus
+  namespace: istio-telemetry
+spec:
+  host: prometheus.istio-telemetry.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: prom
+  namespace: istio-telemetry
+  annotations:
+    kubernetes.io/ingress.class: istio
+spec:
+  rules:
+    - host: ingress-prom.c11i.istio.webinf.info
+      http:
+        paths:
+          - path: /.*
+            backend:
+              serviceName: prometheus
+              servicePort: 9090

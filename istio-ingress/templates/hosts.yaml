@@ -1,32 +1,3 @@
-# Defines the hosts supported by this gateway, using values.yaml config
-apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
-metadata:
-  name: istio-gateway4
-spec:
-  selector:
-    istio: {{ .Release.Namespace }}
-  servers:
-{{- if .Values.tls }}
-  - port:
-      number: 443
-      name: https-default
-      protocol: HTTPS
-    tls:
-      mode: SIMPLE
-      serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
-      privateKey: /etc/istio/ingressgateway-certs/tls.key
-    hosts:
-    - "*"
-{{- end }}
-  - port:
-      number: 80
-      name: http
-      protocol: HTTP
-    hosts:
-  {{ range $app := .Values.hosts }}
-    - "{{ $app.name }}.{{ $.Values.domain }}"
-  {{- end }}
 
 # TODO: range TCP ports, add ports
 # {{ .Values.domain }}
@@ -36,15 +7,39 @@ apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: {{ $app.name }}
+  namespace: {{ $.Release.Namespace }}
 spec:
   hosts:
   - "{{ $app.name }}.{{ $.Values.domain }}"
   gateways:
-  - istio-gateway4
+  - ingressgateway
   http:
   - route:
     - destination:
         host: {{ $app.dest }}
         port:
-          number: {{ $app.port }}
+          number: {{ $app.destPort }}
+{{- end }}
+
+{{ range $app := .Values.ingressPorts }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ $app.name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - ingressgateway
+  http:
+  -
+    match:
+    - port: {{ $app.port }}
+    route:
+    - destination:
+        host: {{ $app.dest }}
+        port:
+          number: {{ $app.destPort }}
 {{- end }}

@@ -1,0 +1,36 @@
+# Used for testing Ingress
+# Will create a bunch of ingresses, with a given class
+#
+# Due to how Ingress works, they can be created in any namespace.
+#
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: pilotingress
+  annotations:
+    kubernetes.io/ingress.class: istio
+spec:
+  rules:
+  - host: pilotingress.{{ .Values.domain }}
+    http:
+      paths:
+      - path: /.*
+        backend:
+          serviceName: pilot
+          servicePort: 8080
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: pilotingressctl
+  # No annotation - should still be picked up by istio-ingress
+spec:
+  rules:
+    - host: pilotingressctl.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /.*
+            backend:
+              serviceName: pilot
+              servicePort: 9093
+---

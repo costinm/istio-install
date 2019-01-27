@@ -28,6 +28,51 @@ mixer:
 
 grafana:
   enabled: true
+  replicaCount: 1
+  image:
+    repository: grafana/grafana
+    tag: 5.2.3
+  persist: false
+  storageClassName: ""
+  accessMode: ReadWriteMany
+  security:
+    enabled: false
+    secretName: grafana
+    usernameKey: username
+    passphraseKey: passphrase
+  service:
+    annotations: {}
+    name: http
+    type: ClusterIP
+    externalPort: 3000
+    loadBalancerIP:
+    loadBalancerSourceRanges:
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          orgId: 1
+          url: http://prometheus:9090
+          access: proxy
+          isDefault: true
+          jsonData:
+            timeInterval: 5s
+          editable: true
+
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'istio'
+          orgId: 1
+          folder: 'istio'
+          type: file
+          disableDeletion: false
+          options:
+            path: /var/lib/grafana/dashboards/istio
 
 
 #
@@ -48,6 +93,16 @@ prometheus:
 #
 servicegraph:
   enabled: true
+  replicaCount: 1
+  image: servicegraph
+  service:
+    annotations: {}
+    name: http
+    type: ClusterIP
+    externalPort: 8088
+    loadBalancerIP:
+    loadBalancerSourceRanges:
+  prometheusAddr: http://prometheus:9090
 
 #
 # addon jaeger tracing configuration
@@ -60,6 +115,22 @@ tracing:
 #
 kiali:
   enabled: false
+  replicaCount: 1
+  hub: docker.io/kiali
+  tag: v0.9
+  contextPath: /kiali
+  dashboard:
+    secretName: kiali
+    usernameKey: username
+    passphraseKey: passphrase
+
+    # Override the automatically detected Grafana URL, useful when Grafana service has no ExternalIPs
+    # grafanaURL:
+
+    # Override the automatically detected Jaeger URL, useful when Jaeger service has no ExternalIPs
+    # jaegerURL:
+  # prometheus address
+  prometheusAddr: http://prometheus:9090
 
 # Common settings used among istio subcharts.
 global:

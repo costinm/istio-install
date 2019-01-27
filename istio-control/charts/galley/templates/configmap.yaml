@@ -113,7 +113,3 @@ data:
           failurePolicy: Fail
         {{- end }}
 
-  accesslist.yaml: |-
-      allowed:
-          - spiffe://cluster.local/ns/{{ .Release.Namespace }}/sa/istio-mixer-service-account
-          - spiffe://cluster.local/ns/{{ .Release.Namespace }}/sa/istio-pilot-service-account

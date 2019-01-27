@@ -183,7 +183,7 @@ spec:
           name: {{ .configMapName | quote }}
           optional: true
       {{- end }}
-{{- if .Values.global.arch }}}
+{{- if .Values.global.arch }}
       affinity:
       {{- include "nodeaffinity" $ | indent 6 }}
 {{- end }}

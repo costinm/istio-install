@@ -19,9 +19,7 @@ ingress, and an "istio: ingressgateway$SUFFIX" label of Gateway selection.
 
 The Gateways use "istio: ingressgateway$SUFFIX" selectors.
 
-
 # Multiple gateway versions
-
 
 
 # Using different pilot versions

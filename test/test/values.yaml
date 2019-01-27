@@ -4,15 +4,15 @@ healthPort: true
 testHub: docker.io/istionightly
 testTag: nightly-release-1.0
 
+# Domain must be configured (overriden) if DNS names are tested.
 domain: v10.istio.webinf.info
 
 # Namespace where istio control plane is installed.
 istioNamespace: istio-system
 
-#fortioImage: istio/fortio:latest
-fortioImage: istio/fortio:1.0.1
+fortioImage: istio/fortio:latest
 
-qps: 500
+qps: 50
 
 # Number of test cluster-IP services pointing to A. Used to create a realistic
 # number of k-8s managed endpoint sets
@@ -27,3 +27,6 @@ testVMServices: 10
 # Will generate envoy RDS for ingress.
 loadTestIngress: 5
 healthCheck: true
+
+fortioCPU: 200m
+fortioCliCPU: 200m

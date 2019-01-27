@@ -1,0 +1,10 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: prometheys
+  namespace: {{ .Release.Namespace }}
+spec:
+  host: prometheus.{{ .Release.Namespace }}
+  trafficPolicy:
+    tls:
+      mode: DISABLE
