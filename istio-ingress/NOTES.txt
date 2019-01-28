@@ -4,27 +4,27 @@ Changes:
 -- easier reconfig of just the gateway
 -- TLS secrets and domain name management is isolated, for better security
 -- simplified configuration
--- multiple versions of the ingress can be used, to minize upgrade risks
+-- multiple versions of the ingress can be used, to minimize upgrade risks
 
 - the new chart uses the default namespace service account, and doesn't require
 additional RBAC permissions.
 
-- simplified label structure. Label change is not supported on upgrade.
+- simplified label and chart structure.
+- ability to run a pilot dedicated for the gateway, isolated from the main pilot. This is more robust, safer on upgrades
+and allows a bit more flexibility.
+- the dedicated pilot-per-ingress is required if the gateway needs to support k8s-style ingress.
 
-- for 'internal load balancer' you should deploy a separate gateway, in a different
-namespace.
+# Port and basic host configuration
 
-All ingress gateway have a "app:ingressgateway" label, used to identify it as an
-ingress, and an "istio: ingressgateway$SUFFIX" label of Gateway selection.
+In order to configure the Service object, the install/upgrade needs to provide a list of all ports.
+In the past, this was done when installing/upgrading full istio, and involved some duplication - ports configured
+both in upgrade, Gateway and VirtualService.
 
-The Gateways use "istio: ingressgateway$SUFFIX" selectors.
+The new Ingress chart uses a 'values.yaml' (see user-example-ingress), which auto-generates Service ports,
+Gateways and basic VirtualService. It is still possible to only configure the ports in Service, and do manual
+config for the rest.
 
-# Multiple gateway versions
-
-
-# Using different pilot versions
-
-
+All internal services ( telemetry, pilot debug ports, mesh expansion ) can now be configured via the new mechanism.
 
 # Migration from istio-system
 

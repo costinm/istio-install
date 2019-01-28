@@ -3,14 +3,18 @@
 # A set of helper functions and examples of install. You can set ISTIO_CONFIG to a yaml file containing
 # your own setting overrides.
 # 
-# - install_FOO [update|install|delete] - will update(default)  or install/delete the FOO component
-# - install_all - a typical deployment with all core components.
+# - iop_FOO [update|install|delete] - will update(default)  or install/delete the FOO component
+# - iop_all - a typical deployment with all core components.
 #
 #
 # Environment:
-# ISTIO_CONFIG - file containing user-specified overrides
-# TOP - if set will be used to locate src/istio.io/istio for installing a 'bookinfo-style' istio for upgrade tests
-# TEMPLATE=1 - generate template to stdout instead of installing
+# - ISTIO_CONFIG - file containing user-specified overrides
+# - TOP - if set will be used to locate src/istio.io/istio for installing a 'bookinfo-style' istio for upgrade tests
+# - TEMPLATE=1 - generate template to stdout instead of installing
+# - INSTALL=1: do an install instead of the default 'update'
+# - DELETE=1: do a delete/purge instead of the default 'update'
+# - NAMESPACE - namespace where the component is installed, defaults to name of component
+# - DOMAIN - if set, ingress will setup mappings for the domain (requires a A and * CNAME records)
 #
 # Files:
 # global.yaml - istio common settings and docs
@@ -40,11 +44,28 @@ ISTIO_CONFIG=${ISTIO_CONFIG:-${IBASE}/user-values.yaml}
 
 HUB=${HUB:-grc.io/istio-release}
 
-# TAGs will default to 'BRANCH-latest-daily'
 
-# All 'install_' functions take 'install' or 'delete' as optional parameter, update by default.
-# The minimal istio-system needed for the a-la-carte.
+# TAGs will default to 'release1.1-latest-daily'
 
+# Typical installation
+function iop_all() {
+    iop_system_citadel $*
+    iop_control $*
+    iop_ingress_pilot $*
+    iop_ingress $*
+    iop_telemetry $*
+    iop_policy $*
+}
+
+# Install a test environment - you can use different TAG or settings.
+function iop_tst_env() {
+    # Control under istio-pilot11
+    iop_control11 $*
+
+    # Under istio-ingress-insecure, mtls off, not using certs.
+    iop_ingress_pilot_insecure $*
+    iop_ingress_insecure $*
+}
 
 # Can run side-by-side with istio 1.0 or 1.1 - just runs citadel.
 #
@@ -55,48 +76,36 @@ HUB=${HUB:-grc.io/istio-release}
 #
 # CRITICAL: before installing a control plane profile, make sure you upgrade citadel settings
 # Galley and injector depend on DNS-based certs.
-function install_system() {
-    local upg=${1:-update}
-    shift
-
-    NAMESPACE=istio-system helm_cmd $upg istio-system-citadel $IBASE/istio-system  $*
+function iop_system_citadel() {
+    NAMESPACE=istio-system istioop istio-system-citadel $IBASE/istio-system  $*
 }
 
 
 # Default control plane under istio-control
 # This also acts as ingress controller, using default istio-ingress
-function install_control() {
-    local upg=${1:-update}
-    shift
-
-    helm_cmd $upg istio-control $IBASE/istio-control
+function iop_control() {
+    istioop istio-control $IBASE/istio-control
 }
 
 # Ingress 1.1 in istio-ingress namespace, with k8s ingress and dedicated pilot
 # istio-system may have a second ingress.
-function install_ingress() {
-    local upg=${1:-update}
-    shift
-
+function iop_ingress() {
     # TODO: customize test domains for each ingress namespace (move to separate function )
 
     # Normal 1.1 ingress. Defaults to istio-control control plane.
-    helm_cmd $upg istio-ingress $IBASE/istio-ingress \
+    istioop istio-ingress $IBASE/istio-ingress \
         --set k8sIngress=true \
         --set global.istioNamespace=istio-ingress \
         $*
 }
 
-function install_ingress_pilot() {
-    local upg=${1:-update}
-    shift
-
+function iop_ingress_pilot() {
     # TODO: customize test domains for each ingress namespace (move to separate function )
 
     # Same namespace pilot, with ingress controller activated
     # No MCP or injector - dedicated for the gateway ( perf and scale characteristics are different from main pilot,
     # and we may want custom settings anyways )
-    NAMESPACE=istio-ingress helm_cmd $upg istio-ingress-pilot $IBASE/istio-control \
+    NAMESPACE=istio-ingress istioop istio-ingress-pilot $IBASE/istio-control \
          --set ingress.ingressControllerMode=DEFAULT \
          --set pilot.env.K8S_INGRESS_NS=istio-ingress \
          --set pilot.useMCP=false \
@@ -108,31 +117,25 @@ function install_ingress_pilot() {
 
 # Verify we can install a second ingress.
 # This must be in STRTICT mode to avoid conflicts
-function install_ingress_insecure() {
-    local upg=${1:-update}
-    shift
-
+function iop_ingress_insecure() {
     # TODO: customize test domains for each ingress namespace (move to separate function )
 
     # Normal 1.1 ingress. Defaults to istio-control control plane.
-    helm_cmd $upg istio-ingress-insecure $IBASE/istio-ingress \
+    istioop istio-ingress-insecure $IBASE/istio-ingress \
         --set k8sIngress=true \
         --set global.controlPlaneSecurityEnabled=false \
         --set global.istioNamespace=istio-ingress-insecure \
         $*
 }
 
-function install_ingress_pilot_insecure() {
-    local upg=${1:-update}
-    shift
-
+function iop_ingress_pilot_insecure() {
     # TODO: customize test domains for each ingress namespace (move to separate function )
 
     # Same namespace pilot, with ingress controller activated
     # No MCP or injector - dedicated for the gateway ( perf and scale characteristics are different from main pilot,
     # and we may want custom settings anyways )
     # Policy disabled by default ( insecure anyways ), can be enabled for tests.
-    NAMESPACE=istio-ingress-insecure helm_cmd $upg istio-ingress-insecure-pilot $IBASE/istio-control \
+    NAMESPACE=istio-ingress-insecure istioop istio-ingress-insecure-pilot $IBASE/istio-control \
          --set ingress.ingressControllerMode=STRICT \
          --set pilot.env.K8S_INGRESS_NS=istio-ingress-insecure \
          --set pilot.useMCP=false \
@@ -147,12 +150,9 @@ function install_ingress_pilot_insecure() {
 
 }
 
-# Standalone ingress. Uses istio-system pilot.
-function install_ingress_system() {
-    local upg=${1:-update}
-    shift
-
-    helm_cmd $upg istio-ingress-system $IBASE/istio-ingress \
+# Standalone ingress. Uses istio-system pilot (bookinfo-style 1.0 or 1.1).
+function iop_ingress_system() {
+    istioop istio-ingress-system $IBASE/istio-ingress \
         --set domain=wis.istio.webinf.info \
         --set global.istioNamespace=istio-system \
         $*
@@ -160,11 +160,8 @@ function install_ingress_system() {
 }
 
 # Standalone ingress. Uses istio-pilot11 pilot.
-function install_ingress_11() {
-    local upg=${1:-update}
-    shift
-
-    helm_cmd $upg istio-ingress11 $IBASE/istio-ingress \
+function iop_ingress_11() {
+    istioop istio-ingress11 $IBASE/istio-ingress \
         --set domain=w11.istio.webinf.info \
         --set global.istioNamespace=istio-pilot11 \
         $*
@@ -174,99 +171,59 @@ function install_ingress_11() {
 }
 
 # Egress gateway
-function install_egress() {
-    # update or install or delete
-    local upg=${1:-update}
-    shift
-
-    helm_cmd $upg istio-egress $IBASE/istio-egress --set zvpn.suffix=v10.webinf.info $*
-
+function iop_egress() {
+    istioop istio-egress $IBASE/istio-egress --set zvpn.suffix=v10.webinf.info $*
 }
 
-
-# Typical installation
-function install_all() {
-    local upg=${1:-update}
-    shift
-
-    install_system $upg $*
-    install_control $upg $*
-    install_ingress_pilot $upg $*
-    install_ingress $upg $*
-    install_telemetry $upg $*
-    install_policy $upg $*
-}
 
 # Install full istio1.1 in istio-system
-function install_system11() {
-    local upg=${1:-update}
-    shift
-
-    helm_cmd $upg istio-system $TOP/src/istio.io/istio/install/kubernetes/helm/istio  $*
+function iop_istio11_istio_system() {
+    istioop istio-system $TOP/src/istio.io/istio/install/kubernetes/helm/istio  $*
 }
 
 
 # Pilot-10 profile. Standalone pilot and istio-1.0.
 # Old - may still work but not supported, only 1.1+
-#function install_control10() {
-#    local upg=${1:-update}
-#    shift
-#
-#    helm_cmd $upg istio-pilot10 $IBASE/istio-control --set global.istio10=true --set global.tag=release-1.0-latest-daily $*
+#function iop_control10() {
+#    istioop istio-pilot10 $IBASE/istio-control --set global.istio10=true --set global.tag=release-1.0-latest-daily $*
 #}
 
 # Second test control plane under istio-pilot11
-function install_control11() {
-    local upg=${1:-update}
-    shift
-
-    helm_cmd $upg istio-pilot11 $IBASE/istio-control
+function iop_control11() {
+    istioop istio-pilot11 $IBASE/istio-control
 }
 
-function install_telemetry() {
-    local upg=${1:-update}
-    shift
-
-    helm_cmd  $upg istio-telemetry $IBASE/istio-telemetry $*
+function iop_telemetry() {
+    istioop  istio-telemetry $IBASE/istio-telemetry $*
 }
 
-function install_policy() {
-    local upg=${1:-update}
-    shift
-
-    helm_cmd  $upg istio-policy $IBASE/istio-policy $*
+function iop_policy() {
+    istioop  istio-policy $IBASE/istio-policy $*
 }
+
 # Install just node agent, in istio-system - a-la-carte.
 # Node agent will run, but default config for istio-system will not use it until it is updated.
 # It should be possible to opt-in !
-function install_nodeagent() {
-    local upg=${1:-update}
-    shift
+function iop_nodeagent() {
 
     # env.CA_PROVIDER
     # env.CA_ADDR
 
 
-    NAMESPACE=istio-system helm_cmd $upg nodeagent $IBASE/istio-system/charts/nodeagent
+    NAMESPACE=istio-system istioop nodeagent $IBASE/istio-system/charts/nodeagent
 }
 
 # Install just CNI, in istio-system
 # TODO: verify it ignores auto-installed, opt-in possible
-function install_cni() {
-    local upg=${1:-update}
-    shift
-
-    NAMESPACE=istio-system helm_cmd $upg cni $IBASE/istio-system/charts/istio-cni
+function iop_cni() {
+    NAMESPACE=istio-system istioop cni $IBASE/istio-system/charts/istio-cni
 }
 
-function install_load() {
-    local upg=${1:-update}
-    shift
-
+function iop_load() {
     kubectl create ns load
     kubectl label namespace load istio-injection=enabled
 
-    helm_cmd $upg load $IBASE/test/pilotload $*
+    istioop load $IBASE/test/pilotload $*
 }
 
 
@@ -335,7 +292,7 @@ function logs-fortio11-cli() {
     _klog app=cli-fortio-tls istio-proxy fortio11 $*
 }
 
-function install_test_apps() {
+function iop_test_apps() {
     #helm install -n fortio11 --namespace fortio11 helm/fortio
     #kubectl -n test apply -f samples/httpbin/httpbin.yaml
     #kubectl -n bookinfo apply -f samples/bookinfo/kube/bookinfo.yaml
@@ -344,11 +301,12 @@ function install_test_apps() {
 
 }
 
-function install_testns() {
+function iop_testns() {
     # Using istio-system (can be pilot10 or pilot11) annotation
     kubectl create ns test
     kubectl label namespace test istio-injection=enabled
 
+    kubectl create ns bookinfo
     kubectl create ns bookinfo
     kubectl label namespace bookinfo istio-injection=enabled
     kubectl -n bookinfo apply -f $TOP/src/istio.io/samples/bookinfo/kube/bookinfo.yaml
@@ -365,8 +323,42 @@ function install_testns() {
     kubectl label ns fortio10 istio-env=istio-sidecarinjector10
 }
 
+# Prepare GKE for Lego DNS. You must have a domain, $DNS_PROJECT
+# and a zone DNS_ZONE created.
+function getCertLegoInit() {
+ # GCP_PROJECT=costin-istio
+
+ gcloud iam service-accounts create dnsmaster
+
+ gcloud projects add-iam-policy-binding $GCP_PROJECT  \
+   --member "serviceAccount:dnsmaster@${GCP_PROJECT}.iam.gserviceaccount.com" \
+   --role roles/dns.admin
+
+ gcloud iam service-accounts keys create $HOME/.ssh/dnsmaster.json \
+    --iam-account dnsmaster@${GCP_PROJECT}.iam.gserviceaccount.com
+
+}
+
+# Get a wildcard ACME cert. MUST BE CALLED BEFORE SETTING THE CNAME
+function getCertLego() {
+ # GCP_PROJECT=costin-istio
+ # DOMAIN=istio.webinf.info
+
+ #gcloud dns record-sets list --zone ${DNS_ZONE}
+
+ GCE_SERVICE_ACCOUNT_FILE=~/.ssh/dnsmaster.json \
+ lego -a --email="dnsmaster@${GCP_PROJECT}.iam.gserviceaccount.com"  \
+ --domains="*.${DOMAIN}"     \
+ --dns="gcloud"     \
+ --path="${HOME}/.lego"  run
+
+ kubectl create -n istio-ingress secret tls istio-ingressgateway-certs --key ${HOME}/.lego/certificates/_.${DOMAIN}.key \
+    --cert ${HOME}/.lego/certificates/_.${DOMAIN}.crt
+
+}
+
 # Setup DNS entries - currently using gcloud
-# Requires DNS_PROJECT, DNS_DOMAIN and DNS_ZONE to be set
+# Requires GCP_PROJECT, DOMAIN and DNS_ZONE to be set
 # For example, DNS_DOMAIN can be istio.example.com and DNS_ZONE istiozone.
 # You need to either buy a domain from google or set the DNS to point to gcp.
 # Similar scripts can setup DNS using a different provider
@@ -374,32 +366,15 @@ function testCreateDNS() {
     local ver=${1:-v10}
     local name=ingress${ver}
 
-    gcloud dns --project=$DNS_PROJECT record-sets transaction start --zone=$DNS_ZONE
+    gcloud dns --project=$GCP_PROJECT record-sets transaction start --zone=$DNS_ZONE
 
-    gcloud dns --project=$DNS_PROJECT record-sets transaction add $IP --name=${name}.${DNS_DOMAIN}. --ttl=300 --type=A --zone=$DNS_ZONE
-    gcloud dns --project=$DNS_PROJECT record-sets transaction add ${name}.${DNS_DOMAIN} --name="*.${ver}.${DNS_DOMAIN}." --ttl=300  --type=CNAME --zone=$DNS_ZONE
+    gcloud dns --project=$GCP_PROJECT record-sets transaction add $IP --name=${name}.${DOMAIN}. --ttl=300 --type=A --zone=$DNS_ZONE
+    gcloud dns --project=$GCP_PROJECT record-sets transaction add ${name}.${DOMAIN} --name="*.${DOMAIN}." \
+        --ttl=300  --type=CNAME --zone=$DNS_ZONE
 
-    gcloud dns --project=$DNS_PROJECT record-sets transaction execute --zone=$DNS_ZONE
+    gcloud dns --project=$GCP_PROJECT record-sets transaction execute --zone=$DNS_ZONE
 }
 
-# Prepare GKE for Lego DNS. You must have a domain, $DNS_PROJECT
-# and a zone DNS_ZONE created.
-function getCertLegoInit() {
- local domain=${1:-w10.istio.webinf.info}
-
- # DNS_ZONE=istiotest
- # GCP_PROJECT=costin-istio
- # DNS_DOMAIN=istio.webinf.info
- gcloud iam service-accounts create dnsmaster
- gcloud projects add-iam-policy-binding $DNS_PROJECT  \
-   --member "serviceAccount:dnsmaster@${DNS_PROJECT}.iam.gserviceaccount.com" \
-   --role roles/dns.admin
- gcloud iam service-accounts keys create $HOME/.ssh/dnsmaster.json \
-    --iam-account dnsmaster@${DNS_PROJECT}.iam.gserviceaccount.com
-
- gcloud dns record-sets list --zone ${DNS_ZONE}
-
-}
 
 # Forward port - Label, Namespace, PortLocal, PortRemote
 # Example:
@@ -418,18 +393,6 @@ function istio-fwd() {
     echo $! > $LOG_DIR/fwd-$N.pid
 }
 
-
-# Get a wildcard ACME cert. MUST BE CALLED BEFORE SETTING THE CNAME
-function getCertLego() {
- local domain=${1:-w10.istio.webinf.info}
-
- GCE_SERVICE_ACCOUNT_FILE=~/.ssh/dnsmaster.json \
- GCE_PROJECT="$DNS_PROJECT"  \
- lego -a --email="dnsmaster@${DNS_PROJECT}.iam.gserviceaccount.com"  \
- --domains="*.${domain}"     \
- --dns="gcloud"     \
- --path="${HOME}/.lego"  run
-}
 
 # For testing the config
 function localPilot() {
@@ -482,20 +445,22 @@ function istio_status11() {
     istioctl -i istio-pilot11 proxy-status
 }
 
-# Run install or update helm.
-# The namespace will match the deployment name.
+# Run install or update istio components. This will be replaced with a real program, for now basic scripting around
+# helm.
 #
-# Params
-# 1. command - install | update | delete
-# 2. namespace - will also be used as chart name (unless explicitly overridden)
-# 3. chart_directory
-# 4. any other options
+# CLI params
+# 1. name of the deloyed component, acts as default namespace unless NAMESPACE is set.
+# 2. chart_directory
+# 3. any other options
+#
+# Environment variables:
+# - INSTALL=1: do an install instead of the default 'update'
+# - DELETE=1: do a delete/purge instead of the default 'update'
+# - NAMESPACE - namespace where the component is installed, defaults to name of component
 #
 # Env: HUB
 # You can specify --set global.tag=$TAG to override the chart's default.
-function helm_cmd() {
-    local upg=$1
-    shift
+function istioop() {
     local n=$1
     shift
     local ns=${NAMESPACE:-$n}
@@ -522,13 +487,13 @@ function helm_cmd() {
 
     if [ "$TEMPLATE" == "1" ] ; then
         helm template --namespace $ns -n $n $cfg  $*
-    elif [ "$upg" == "update" ] ; then
-        echo helm upgrade $n $cfg $*
-        helm upgrade --wait $n $* $cfg
-    elif [ "$upg" == "delete" ] ; then
-        helm delete --purge $n
-    else
+    elif [ "$INSTALL" == "1" ] ; then
         echo helm install --namespace $ns -n $n $cfg  $*
         helm install --namespace $ns -n $n $cfg $*
+    elif [ "$DELETE" == "1" ] ; then
+        helm delete --purge $n
+    else
+        echo helm upgrade $n $cfg $*
+        helm upgrade --wait $n $* $cfg
     fi
 }
