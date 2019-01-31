@@ -7,7 +7,13 @@ metadata:
     app: ingressgateway
     istio: ingressgateway
 spec:
+{{- if not .Values.autoscaleEnabled }}
+{{- if .Values.replicaCount }}
   replicas: {{ .Values.replicaCount }}
+{{- else }}
+  replicas: 1
+{{- end }}
+{{- end }}
   template:
     metadata:
       labels:
@@ -41,6 +47,28 @@ spec:
             privileged: true
 {{- end }}
       containers:
+{{- if .Values.sds.enabled }}
+        - name: ingress-sds
+{{- if contains "/" .Values.sds.image }}
+          image: "{{ .Values.sds.image }}"
+{{- else }}
+          image: "{{ .Values.global.hub }}/{{ .Values.sds.image }}:{{ .Values.global.tag }}"
+{{- end }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          env:
+          - name: "ENABLE_WORKLOAD_SDS"
+            value: "false"
+          - name: "ENABLE_INGRESS_GATEWAY_SDS"
+            value: "true"
+          - name: "INGRESS_GATEWAY_NAMESPACE"
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          volumeMounts:
+          - name: ingressgatewaysdsudspath
+            mountPath: /var/run/ingress_gateway
+{{- end }}
         - name: istio-proxy
 {{- if contains "/" .Values.global.proxy.image }}
           image: "{{ .Values.global.proxy.image }}"
@@ -136,16 +164,28 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name             
+          {{- if .Values.sds.enabled }}
+          - name: ISTIO_META_USER_SDS
+            value: "true"
+          {{- end }}
           {{- if .Values.env }}
           {{- range $key, $val := .Values.env }}
           - name: {{ $key }}
             value: {{ $val }}
           {{- end }}
-          {{ end }}
+          {{- end }}
           volumeMounts:
           {{ if .Values.global.sds.enabled }}
           - name: sdsudspath
             mountPath: /var/run/sds
+          {{- end }}
+          {{- if .Values.global.sds.useTrustworthyJwt }}
+          - name: istio-token
+            mountPath: /var/run/secrets/tokens
+          {{- end }}
+          {{- if .Values.sds.enabled }}
+          - name: ingressgatewaysdsudspath
+            mountPath: /var/run/ingress_gateway
           {{- end }}
           - name: istio-certs
             mountPath: /etc/certs
@@ -159,10 +199,23 @@ spec:
 {{ toYaml .Values.additionalContainers | indent 8 }}
 {{- end }}
       volumes:
+      {{- if .Values.sds.enabled }}
+      - name: ingressgatewaysdsudspath
+        emptyDir: {}
+      {{- end }}
       {{ if .Values.global.sds.enabled }}
       - name: sdsudspath
         hostPath:
           path: /var/run/sds
+      {{- if .Values.global.sds.useTrustworthyJwt }}
+      - name: istio-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              path: istio-token
+              expirationSeconds: 43200
+              audience: {{ .Values.global.trustDomain }}
+      {{- end }}
       {{- end }}
       - name: istio-certs
         secret:

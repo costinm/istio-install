@@ -1,3 +1,21 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fortio
+  annotations:
+    kubernetes.io/ingress.class: istio
+spec:
+  rules:
+    - host: fortiocontroling.{{ .Values.domain }}
+      http:
+        paths:
+          - path: /.*
+            backend:
+              serviceName: fortiotls
+              servicePort: 8080
+
+
+---
 # This replaces the "auth.istio.io/8080: MUTUAL_TLS|NONE" service annotation
 apiVersion: "authentication.istio.io/v1alpha1"
 kind: "Policy"

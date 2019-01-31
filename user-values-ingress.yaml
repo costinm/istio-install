@@ -1,22 +1,26 @@
-# Example values used to customize the installation for istio-ingress
+# Example values used to customize the installation for istio-ingress by adding ports and host mappings
+# for various components. Use for debugging/test and as an example.
 #
-# install_ingress update -f user-values-ingress.yaml --set domain=c11i.istio.webinf.info
-# or
+# iop_ingress update -f user-values-ingress.yaml --set domain=....
+#
+# or the equivalent template or helm:
+#
 # helm upgrade istio-ingress -f /workspace/istio-master/go/src/github.com/costinm/istio-install/global.yaml -f \
 #   user-values-example.yaml ./istio-ingress --set k8sIngress=true \
 #  --set global.istioNamespace=istio-ingress -f user-values-ingress.yaml --set domain=istio.example.com
 #
-# If you have multiple ingress gateways, use a separate namespace and user-values for each.
-
 # This example will auto-generate Gateway and VirtualService based on the hosts and ports section - for
 # advanced settings create Gateway/VirtualService directly.
 # The example will expose internal services for debugging - should not be used in production.
 
 # Domain is the main domain used for the Gateway. Will be appended to all 'hosts'.
 # Create a *.DOMAIN A record in DNS, pointing to the gateway IP.
+# For example, I use 'control.istio.webinf.info' for the istio-ingress, 'master.istio.webinf.info' for
+# the istio-ingress-master
 domain: is11.istio.webinf.info
 
-## You can add custom gateway ports.
+## You can add custom gateway ports. The actual Gateways and services are declared by user - but Service must
+## have the ports.
 ## Must include the default ports as well, helm is not additive
 ports:
   - port: 80
@@ -28,6 +32,9 @@ ports:
     name: tls
 
 # Applications mapped by port number - each port forwards to a service
+# The ports were used in Istio 1.0 old-style Gateway.
+# If you run multiple telemetry namespaces - use additional ports, or use the DNS-based method.
+# This works for TCP services as well.
 ingressPorts:
   - name: prom15030
     port: 15030
@@ -73,7 +80,34 @@ hosts:
     dest: tracing.istio-telemetry.svc.cluster.local
     destPort: 80
 
+  - name: istio-pilot
+    dest: istio-pilot.istio-pilot11.svc.cluster.local
+    destPort: 15011
+
+  ## Debug entry for Pilot
+  - name: pilot
+    dest: istio-pilot.istio-control.svc.cluster.local
+    destPort: 8080
+
+  - name: pilot-master
+    dest: istio-pilot.istio-master.svc.cluster.local
+    destPort: 8080
+
+  ## Test app access
+  - name: fortiomaster
+    dest: fortiotls.fortiomaster.svc.cluster.local
+    destPort: 8080
+
+  - name: fortiocontrol
+    dest: fortiotls.fortio-control.svc.cluster.local
+    destPort: 8080
+
+  - name: grafana-master
+    dest: grafana.istio-telemetry-master.svc.cluster.local
+    destPort: 3000
+
   # Old 1.0 version of prometheus - collects data from 1.0 mixer
+  # The entries can be used with the 1.1 Gateway if you still run a 1.0 system ( while upgrading )
   - name: prom10
     dest: prometheus.istio-system.svc.cluster.local
     destPort: 9090
@@ -83,27 +117,11 @@ hosts:
     dest: grafana.istio-system.svc.cluster.local
     destPort: 3000
 
-  - name: trace
+  - name: trace10
     dest: tracing.istio-system.svc.cluster.local
     destPort: 80
-
-  - name: istio-pilot
-    dest: istio-pilot.istio-pilot11.svc.cluster.local
-    destPort: 15011
-
-  # External domains pointing to pilot debug port
-  - name: pilot
-    dest: istio-pilot.istio-pilot11.svc.cluster.local
-    destPort: 8080
-
-  - name: pilot104
-    dest: istio-pilot.istio-pilot10.svc.cluster.local
-    destPort: 8080
 
   - name: pilot10
     dest: istio-pilot.istio-system.svc.cluster.local
     destPort: 8080
 
-  - name: fortio11
-    dest: fortiotls.fortio11.svc.cluster.local
-    destPort: 8080
