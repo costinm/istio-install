@@ -1,0 +1,77 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Sidecar
+metadata:
+  name: default
+  namespace: istio-debug
+spec:
+  egress:
+    - hosts:
+        - "istio-telemetry/*"
+        - "istio-ingress/*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: pilot-ingress
+  namespace: istio-debug
+spec:
+  hosts:
+  - pilot.control.istio.webinf.info
+  gateways:
+  - istio-ingress/ingressgateway
+  http:
+  - route:
+    - destination:
+        host: istio-pilot.istio-control.svc.cluster.local
+        port:
+          number: 8080
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: pilot-ingress
+  namespace: istio-debug
+spec:
+  hosts:
+    - pilot-ingress.control.istio.webinf.info
+  gateways:
+    - istio-ingress/ingressgateway
+  http:
+    - route:
+        - destination:
+            host: istio-pilot.istio-ingress.svc.cluster.local
+            port:
+              number: 8080
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: prom-ingress
+  namespace: istio-debug
+spec:
+  hosts:
+    - prometheus1.control.istio.webinf.info
+  gateways:
+    - istio-ingress/ingressgateway
+  http:
+    - route:
+        - destination:
+            host: prometheus.istio-telemetry.svc.cluster.local
+            port:
+              number: 9090
+---
+
+# Must be in the ingress namespace
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: prometheus
+  namespace: istio-ingress
+spec:
+  host: prometheus.istio-telemetry.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE

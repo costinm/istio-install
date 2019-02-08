@@ -22,7 +22,8 @@
 # FOO/values.yaml - each component settings (not including globals)
 # ~/.istio.rc - environment variables sourced - may include TOP, TAG, HUB
 # ~/.istio-values.yaml - user config (can include common setting overrides)
-
+#
+# --recreate-pods will force pods to restart, even if no config was changed, to pick the new label
 
 
 
@@ -40,6 +41,10 @@ fi
 # Contains values overrides for all configs.
 # Can point to a different file, based on env or .istio.rc
 ISTIO_CONFIG=${ISTIO_CONFIG:-${IBASE}/user-values.yaml}
+
+# Default control plane for advanced installer.
+alias kis='kubectl -n istio-control'
+alias kii='kubectl -n istio-ingress'
 
 
 # The file contains examples of various setup commands I use on test clusters.
@@ -227,7 +232,7 @@ function iop_istio11_istio_system() {
 
 # Second test control plane under istio-pilot11
 function iop_control11() {
-    istioop istio-pilot11 $IBASE/istio-control
+    istioop istio-pilot11 $IBASE/istio-control $*
 }
 
 function iop_telemetry() {
@@ -274,22 +279,26 @@ function _klog() {
 }
 
 # Kubernetes exec wrapper
+# - label (app=fortio)
+# - container (istio-proxy)
+# - namespace
 function _kexec() {
     local label=$1
     local container=${2:-istio-proxy}
     local ns=${3:-istio-system}
-    local cmd=${4:-/bin/bash}
-    kubectl --namespace=$ns exec -it $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') -c $container -- "$cmd"
+    shift; shift; shift
+    local cmd=${*:-/bin/bash}
+    kubectl --namespace=$ns exec -it $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') -c $container -- $cmd
 }
 
 function logs-ingress() {
-    istioctl proxy-status -i istio-pilot11
-    _klog istio=istio-ingress istio-proxy istio-ingress $*
+    istioctl proxy-status -i istio-control
+    _klog app=ingressgateway istio-proxy istio-ingress $*
 }
 
 function exec-ingress() {
-    istioctl proxy-status -i istio-pilot11
-    _kexec istio=istio-ingress istio-proxy istio-ingress $*
+    istioctl proxy-status -i istio-control
+    _kexec app=ingressgateway istio-proxy istio-ingress $*
 }
 
 function logs-inject() {
@@ -329,15 +338,35 @@ function logs-fortio11-cli() {
     _klog app=cli-fortio-tls istio-proxy fortio11 $*
 }
 
+function iop_test_apps_prepare() {
+    #helm install -n fortio11 --namespace fortio11 helm/fortio
+    #kubectl -n test apply -f samples/httpbin/httpbin.yaml
+    #kubectl -n bookinfo apply -f samples/bookinfo/kube/bookinfo.yaml
+
+
+    kubectl create ns httpbin
+    kubectl label ns httpbin istio-env=istio-control
+
+    kubectl create ns bookinfo
+    kubectl label ns bookinfo istio-env=istio-control
+
+    kubectl create ns fortio-control
+    kubectl label ns fortio-control istio-env=istio-control
+
+    kubectl create ns none
+    kubectl label ns none istio-env=istio-control
+
+
+}
+
 function iop_test_apps() {
     #helm install -n fortio11 --namespace fortio11 helm/fortio
     #kubectl -n test apply -f samples/httpbin/httpbin.yaml
     #kubectl -n bookinfo apply -f samples/bookinfo/kube/bookinfo.yaml
 
-    kubectl create ns fortio-control
-    kubectl label ns fortio-control istio-env=istio-control
-
     helm install -n fortio-control --namespace fortio-control test/fortio
+
+    helm install -n none --namespace none test/none
 
 }
 
@@ -437,6 +466,13 @@ function istio-fwd() {
     echo $! > $LOG_DIR/fwd-$N.pid
 }
 
+function istio-restart() {
+    local L=${1:-app=pilot}
+    local NS=${2:-istio-control}
+
+    kubectl --namespace=$NS delete po -l $L
+}
+
 
 # For testing the config
 function localPilot() {
@@ -489,6 +525,10 @@ function istio_status11() {
     istioctl -i istio-pilot11 proxy-status
 }
 
+function istio_ingress() {
+
+    istioctl -i istio-ingress proxy-config routes -o json $(istioctl -i istio-ingress proxy-status | grep ingressgateway | cut -d' ' -f 1)
+}
 # Run install or update istio components. This will be replaced with a real program, for now basic scripting around
 # helm.
 #
@@ -537,7 +577,7 @@ function istioop() {
     elif [ "$DELETE" == "1" ] ; then
         helm delete --purge $n
     else
-        echo helm upgrade $n $cfg $*
-        helm upgrade --wait $n $* $cfg
+        echo helm upgrade --wait -i $n $cfg $*
+        helm upgrade --wait -i  $n $* $cfg
     fi
 }

@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: echosrv
-        image: istio/fortio:latest
+        image: costinm/fortio:latest
         imagePullPolicy: Always
         args:
           - load

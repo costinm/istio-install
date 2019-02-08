@@ -148,6 +148,7 @@ spec:
       annotations:
         status.sidecar.istio.io/port: "0"
         sidecar.istio.io/interceptionMode: NONE
+        HTTP10: "1"
     spec:
       containers:
       - name: echosrv

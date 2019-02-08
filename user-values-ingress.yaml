@@ -17,7 +17,7 @@
 # Create a *.DOMAIN A record in DNS, pointing to the gateway IP.
 # For example, I use 'control.istio.webinf.info' for the istio-ingress, 'master.istio.webinf.info' for
 # the istio-ingress-master
-domain: is11.istio.webinf.info
+domain: control.istio.webinf.info
 
 ## You can add custom gateway ports. The actual Gateways and services are declared by user - but Service must
 ## have the ports.
@@ -30,6 +30,20 @@ ports:
   # This is the port where sni routing happens
   - port: 15443
     name: tls
+
+secretVolumes:
+  - name: ingressgateway-certs
+    secretName: istio-ingressgateway-certs
+    mountPath: /etc/istio/ingressgateway-certs
+  - name: ingressgateway-ca-certs
+    secretName: istio-ingressgateway-ca-certs
+    mountPath: /etc/istio/ingressgateway-ca-certs
+  - name: ingressgateway-certs-fortionoistio
+    secretName: istio-ingressgateway-certs-fortionoistio
+    mountPath: /etc/istio/ingressgateway-certs-fortionoistio
+  - name: ingressgateway-certs-fortiotls
+    secretName: istio-ingressgateway-certs
+    mountPath: /etc/istio/ingressgateway-certs-fortiotls
 
 # Applications mapped by port number - each port forwards to a service
 # The ports were used in Istio 1.0 old-style Gateway.

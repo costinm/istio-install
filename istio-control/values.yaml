@@ -121,7 +121,9 @@ pilot:
   # TODO: remove this, only used for testing, need real config
   env:
     GODEBUG: gctrace=2
-    DEFAULT_NAMESPACE_DEPENDENCIES: istio-system
+    PILOT_HTTP10: "1"
+    CONFIG_NAMESPACE: "istio-config"
+    PILOT_TRACE_SAMPLING: "0.1"
 
   cpu:
     targetAverageUtilization: 80

@@ -81,7 +81,7 @@ spec:
     spec:
       containers:
       - name: fortio
-        image: {{ .Values.fortioImage | default "istio/fortio:1.0.1" }}
+        image: {{ .Values.fortioImage | default "costinm/fortio:latest" }}
         ports:
          - containerPort: 8080
          - containerPort: 8081

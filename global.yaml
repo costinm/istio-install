@@ -38,9 +38,8 @@ global:
   tag: release-1.1-latest-daily
 
   # monitoring port used by mixer, pilot, galley
-  # TODO: move to 150xx range
-  # TODO: mark as 'hidden', not important for most users (internal).
-  monitoringPort: 9093
+  # TODO: mark as 'hidden' or move to individual templates, not important for most users (internal).
+  monitoringPort: 15014
 
   # TODO: specific to control, move there
   k8sIngress:
