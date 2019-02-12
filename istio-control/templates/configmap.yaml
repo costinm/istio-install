@@ -4,6 +4,8 @@ kind: ConfigMap
 metadata:
   name: istio
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 data:
 
   meshNetworks: |-

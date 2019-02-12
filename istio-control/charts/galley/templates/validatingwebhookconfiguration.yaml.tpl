@@ -5,9 +5,7 @@ metadata:
   name: istio-galley
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ template "galley.name" . }}
-    chart: {{ template "galley.chart" . }}
-    heritage: {{ .Release.Service }}
+    app: galley
     release: {{ .Release.Name }}
     istio: galley
 webhooks:

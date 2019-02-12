@@ -357,17 +357,17 @@ function iop_test_apps_prepare() {
     kubectl label ns none istio-env=istio-control
 
 
+    kubectl create ns cassandra
+    kubectl label ns cassandra istio-env=istio-control
+
 }
 
 function iop_test_apps() {
-    #helm install -n fortio11 --namespace fortio11 helm/fortio
-    #kubectl -n test apply -f samples/httpbin/httpbin.yaml
-    #kubectl -n bookinfo apply -f samples/bookinfo/kube/bookinfo.yaml
+    kubectl -n httpbin apply -f test/k8s/httpbin.yaml
+    kubectl -n cassandra apply -f test/cassandra
 
-    helm install -n fortio-control --namespace fortio-control test/fortio
-
-    helm install -n none --namespace none test/none
-
+    istioop fortio-control $IBASE/test/fortio --set domain=$DOMAIN $*
+    istioop none $IBASE/test/none $*
 }
 
 function iop_testns() {
@@ -538,9 +538,13 @@ function istio_ingress() {
 # 3. any other options
 #
 # Environment variables:
-# - INSTALL=1: do an install instead of the default 'update'
-# - DELETE=1: do a delete/purge instead of the default 'update'
+# - HELM_INSTALL=1: do an install instead of the default 'update'
+# - HELM_DELETE=1: do a delete/purge instead of the default 'update'
+# - TEMPLATE=1: just show the template
+# - KUBEAPPLY - will do a kube apply
+
 # - NAMESPACE - namespace where the component is installed, defaults to name of component
+# - ISTIO_ENV - istio environment for auto-injection (defaults to istio-control)
 #
 # Env: HUB
 # You can specify --set global.tag=$TAG to override the chart's default.
@@ -571,13 +575,21 @@ function istioop() {
 
     if [ "$TEMPLATE" == "1" ] ; then
         helm template --namespace $ns -n $n $cfg  $*
-    elif [ "$INSTALL" == "1" ] ; then
+    elif [ "$HELMINSTALL" == "1" ] ; then
         echo helm install --namespace $ns -n $n $cfg  $*
         helm install --namespace $ns -n $n $cfg $*
-    elif [ "$DELETE" == "1" ] ; then
+    elif [ "$HELMDELETE" == "1" ] ; then
         helm delete --purge $n
-    else
+    elif [ "$KUBEAPPLY" == "1" ] ; then
+        # Experiment with rel (may use different name)
+        kubectl create  ns $ns > /dev/null
+        kubectl label namespace $ns istio-env=${ISTIO_ENV:-istio-control} --overwrite
+        helm template --namespace $ns -n $n $cfg $* | kubectl apply -n $ns --prune -l release=$n -f -
+     elif [ "$HELM" == "1" ] ; then
         echo helm upgrade --wait -i $n $cfg $*
         helm upgrade --wait -i  $n $* $cfg
+    else
+        echo "Must set an environment variable indicating the install type: KUBEAPPLY=1 HELM=1 TEMPLATE=1"
+        echo "For helm, HELMDELETE=1 and HELMINSTALL=1 need to be set if the operation is initial install or delete"
     fi
 }

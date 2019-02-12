@@ -6,6 +6,7 @@ metadata:
   labels:
     app: istio-pilot
     istio: pilot
+    release: {{ .Release.Name }}
 spec:
   ports:
   - port: 15010

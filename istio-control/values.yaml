@@ -112,6 +112,12 @@ pilot:
 
   traceSampling: 10.0
 
+  # Additional labels to apply to the deployment.
+  # The settings will auto-update pilot if keel is installed.
+  deploymentLabels:
+    keel.sh/policy: major
+    keel.sh/trigger: poll
+
   # Resources for a small pilot install
   resources:
     requests:

@@ -7,6 +7,10 @@ metadata:
   labels:
     app: pilot
     istio: pilot
+    release: {{ .Release.Name }}
+{{- range $key, $val := .Values.deploymentLabels }}
+    {{ $key }}: "{{ $val }}"
+{{- end }}
   annotations:
     checksum/config-volume: {{ template "istio.configmap.checksum" . }}
 spec:
@@ -111,7 +115,6 @@ spec:
           volumeMounts:
           - name: config-volume
             mountPath: /etc/istio/config
-            optional: true
 
 {{- if .Values.global.controlPlaneSecurityEnabled}}
           - name: istio-certs

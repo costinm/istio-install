@@ -5,8 +5,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: sidecar-injector
-    chart: sidecar-injector
-    heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
     istio: sidecar-injector
 spec:

@@ -4,6 +4,8 @@ kind: HorizontalPodAutoscaler
 metadata:
   name: istio-pilot
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   maxReplicas: {{ .Values.autoscaleMax }}
   minReplicas: {{ .Values.autoscaleMin }}
