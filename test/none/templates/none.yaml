@@ -17,29 +17,29 @@ apiVersion: networking.istio.io/v1alpha3
 kind: Sidecar
 metadata:
   name: default
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   egress:
     - hosts:
-        - "istio-system/*"
+        - "./*"
+        - "istio-policy/*"
+    # Explicit import, full name, only one port
+    - hosts:
+        - "istio-telemetry/istio-telemetry.istio-telemetry.svc.cluster.local"
       port:
-        # TODO: if not imported, disable mixer checks
-        # Note mixer and policy are on same port - so listener generation will only create one port.
-        # However this is fine, since envoy is using mixer only internally.
         number: 9091
         name: grpc-mixer
         protocol: GRPC
     - hosts:
-        - "istio-system/*"
+        - "fortio110/*"
       port:
-        number: 15004
-        name: grpc-mixer-mtls
-        protocol: GRPC
-    - hosts:
-        - none/*
-        - default/test.default # TODO: without namespace it  fails validation !
-      # All ports are included
-      # TODO: if we include the namespace, why do we need full name ? Importing regular services should work.
+        number: 8080
+        name: http-echo
+        protocol: HTTP
+
+
 
   # Label selection seems to confuse the new code.
   ingress:
@@ -70,7 +70,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: fortio
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   ports:
   - port: 8080 # This is the service port - connect to fortio:8080 as client (using http proxy or in mesh)
@@ -91,7 +93,9 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: fortio
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   replicas: 1
   template:
@@ -137,7 +141,9 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: fortio-cli
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   replicas: 1
   template:
@@ -176,6 +182,94 @@ spec:
             memory: "1G"
 
 ---
+# Will make requests to fortio using HTTP_PROXY
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: fortio-cli-cross
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fortio-cli-cross
+        version: v1
+      annotations:
+        status.sidecar.istio.io/port: "0"
+        sidecar.istio.io/interceptionMode: NONE
+    spec:
+      containers:
+        - name: echosrv
+          image: costinm/fortio:latest
+          imagePullPolicy: Always
+          args:
+            - load
+            - --stdclient
+            - -t
+            - "0"
+            - -c
+            - "32"
+            - -qps
+            - "500"
+            - http://fortio.fortio110:8080/echo?size=5000
+          env:
+            - name: HTTP_PROXY
+              value: 127.0.0.1:15002
+          resources:
+            requests:
+              cpu: 500m
+              memory: "1G"
+            limits:
+              cpu: 1000m
+              memory: "1G"
+
+---
+# Make requests using localhost
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: fortio-cli-local
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: fortio-cli-local
+        version: v1
+      annotations:
+        status.sidecar.istio.io/port: "0"
+        sidecar.istio.io/interceptionMode: NONE
+    spec:
+      containers:
+        - name: echosrv
+          image: costinm/fortio:latest
+          imagePullPolicy: Always
+          args:
+            - load
+            - -t
+            - "0"
+            - -c
+            - "32"
+            - -qps
+            - "500"
+            - -H
+            - "Host:fortio.fortio11"
+            - http://127.0.0.1:8080/echo?size=5000
+          resources:
+            requests:
+              cpu: 500m
+              memory: "1G"
+            limits:
+              cpu: 1000m
+              memory: "1G"
+
+---
 
 # "None" mode depends on unique ports for each defined service or service entry.
 # Not supported/require iptables:
@@ -191,7 +285,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: s1tcp
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
    hosts:
    - s1tcp.none
@@ -216,7 +312,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: s1http
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - s1http.none
@@ -241,7 +339,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: s2
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - s2.external.test.istio.io
@@ -266,7 +366,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: s2dns
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - s2dns.external.test.istio.io
@@ -286,7 +388,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: tcpmeshdns
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - tcpmeshdns.seexamples.svc
@@ -305,7 +409,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: tcpmeshstatic
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - tcpmeshstatic.seexamples.svc
@@ -325,7 +431,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: tcpmeshstaticint
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - tcpmeshstaticint.seexamples.svc
@@ -349,7 +457,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: ServiceEntry
 metadata:
   name: https
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   # TODO: Bug: without isolation (in the main test) it causes 'duplicated cluster', envoy rejects config
@@ -368,7 +478,9 @@ apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
   name: tls-routing
-  namespace: none
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - www1.googleapis.com

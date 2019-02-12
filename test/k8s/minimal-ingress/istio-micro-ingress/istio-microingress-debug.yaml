@@ -19,6 +19,8 @@ spec:
               number: 15014
 
 ---
+# Since we are using Sidecar, the DR must be in the same NS with the ingress
+# TODO: there is one in istio-telemetry, not clear why not picked
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
@@ -44,4 +46,5 @@ spec:
         - destination:
             host: prometheus.istio-telemetry.svc.cluster.local
             port:
+              number: 15014
 

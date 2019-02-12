@@ -4,14 +4,17 @@
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: cli-fortio-tls
+  name: cli-fortio
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   replicas: 1
   template:
     metadata:
       labels:
-        app: cli-fortio-tls
-        version: v1-tls
+        app: cli-fortio
+        version: v1
       annotations:
         sidecar.istio.io/debug: "{{ .Values.debug }}"
         #sidecar.istio.io/discoveryAddress: "istio-pilot.{{ .Values.pilotns }}:15010"
@@ -28,7 +31,7 @@ spec:
           - "30"
           - -qps
           - "{{ .Values.qps }}"
-          - http://fortiotls:8080/echo?size=5000
+          - http://fortio:8080/echo?size=5000
         resources:
           requests:
             cpu: 800m
@@ -36,53 +39,53 @@ spec:
           limits:
             cpu: 1000m
             memory: "1G"
-      - name: app
-        image: istionightly/app:nightly-release-1.0
-        imagePullPolicy: IfNotPresent
-        args:
-        - --port
-        - "8082"
-        - --port
-        - "80"
-        - --port
-        - "9090"
-        - --port
-        - "90"
-        - --grpc
-        - "7070"
-        - --grpc
-        - "70"
-        - --port
-        - "10090"
-        - --port
-        - "19090"
-        - --port
-        - "3333"
-        - --version
-        - "v1"
-        ports:
-        - containerPort: 8082
-        - containerPort: 80
-        - containerPort: 9090
-        - containerPort: 90
-        - containerPort: 10090
-        - containerPort: 19090
-        - name: tcp-health-port
-          containerPort: 3333
-        securityContext:
-          capabilities:
-            add:
-            - NET_ADMIN
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 3333
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          failureThreshold: 10
-        readinessProbe:
-          tcpSocket:
-            port: tcp-health-port
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          failureThreshold: 10
+#      - name: app
+#        image: istionightly/app:nightly-release-1.0
+#        imagePullPolicy: IfNotPresent
+#        args:
+#        - --port
+#        - "8082"
+#        - --port
+#        - "80"
+#        - --port
+#        - "9090"
+#        - --port
+#        - "90"
+#        - --grpc
+#        - "7070"
+#        - --grpc
+#        - "70"
+#        - --port
+#        - "10090"
+#        - --port
+#        - "19090"
+#        - --port
+#        - "3333"
+#        - --version
+#        - "v1"
+#        ports:
+#        - containerPort: 8082
+#        - containerPort: 80
+#        - containerPort: 9090
+#        - containerPort: 90
+#        - containerPort: 10090
+#        - containerPort: 19090
+#        - name: tcp-health-port
+#          containerPort: 3333
+#        securityContext:
+#          capabilities:
+#            add:
+#            - NET_ADMIN
+#        livenessProbe:
+#          httpGet:
+#            path: /healthz
+#            port: 3333
+#          initialDelaySeconds: 10
+#          periodSeconds: 10
+#          failureThreshold: 10
+#        readinessProbe:
+#          tcpSocket:
+#            port: tcp-health-port
+#          initialDelaySeconds: 10
+#          periodSeconds: 10
+#          failureThreshold: 10
