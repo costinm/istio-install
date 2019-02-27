@@ -78,11 +78,11 @@ function iop_istio() {
 
     # Galley, Pilot and auto-inject in istio-control. Similar security risks.
     # Can be updated independently, each is optiona.
-    iop istio-control istio-config $IBASE/istio-config --set configValidation=true
-    iop istio-control istio-control $IBASE/istio-control
-    iop istio-control istio-autoinject $IBASE/istio-autoinject --set enableNamespacesByDefault=true
+    iop istio-control istio-config $IBASE/istio-control/istio-config --set configValidation=true
+    iop istio-control istio-discovery $IBASE/istio-control/istio-discovery
+    iop istio-control istio-autoinject $IBASE/istio-control/istio-autoinject --set enableNamespacesByDefault=true
 
-    iop istio-gateway istio-gateway $IBASE/istio-ingress
+    iop istio-gateway istio-gateway $IBASE/gateways/istio-ingress
 
     # Not converted yet to prune
     IOP_MODE=helm iop istio-telemetry istio-telemetry $IBASE/istio-telemetry
@@ -98,23 +98,23 @@ function iop_istio() {
 #
 # Uses shared (singleton) system citadel.
 function iop_master() {
-    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-config-master $IBASE/istio-config
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-config-master $IBASE/istio-control/istio-config
 
-    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-control-master $IBASE/istio-control \
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-discovery-master $IBASE/istio-control/istio-discovery \
        --set policy.enable=false \
        --set global.istioNamespace=istio-master \
        --set global.telemetryNamespace=istio-telemetry-master \
        --set global.policyNamespace=istio-policy-master \
        $*
 
-    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-autoinject $IBASE/istio-autoinject \
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-autoinject $IBASE/istio-control/istio-autoinject \
       --set global.istioNamespace=istio-master
 
     TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-telemetry-master istio-telemetry-master $IBASE/istio-telemetry \
         --set global.istioNamespace=istio-master \
         $*
 
-    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-gateway-master istio-gateway-master $IBASE/istio-ingress \
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-gateway-master istio-gateway-master $IBASE/gateways/istio-ingress \
         --set global.istioNamespace=istio-master \
         $*
 
@@ -126,7 +126,7 @@ function iop_k8s_ingress() {
 
     # No MCP or injector - dedicated for the gateway ( perf and scale characteristics are different from main pilot,
     # and we may want custom settings anyways )
-    iop istio-ingress istio-ingress-pilot $IBASE/istio-control \
+    iop istio-ingress istio-ingress-pilot $IBASE/istio-control/istio-discovery \
          --set ingress.ingressControllerMode=DEFAULT \
          --set env.K8S_INGRESS_NS=istio-ingress \
          --set global.controlPlaneSecurityEnabled=false \
@@ -139,7 +139,7 @@ function iop_k8s_ingress() {
      # Also --set ingress.ingressClass=istio-...
 
      # As an example and to test, ingress is installed using Tiller.
-    IOP_MODE=helm iop istio-ingress istio-ingress $IBASE/istio-ingress \
+    IOP_MODE=helm iop istio-ingress istio-ingress $IBASE/gateways/istio-ingress \
         --set k8sIngress=true \
         --set global.controlPlaneSecurityEnabled=false \
         --set global.istioNamespace=istio-ingress \
@@ -150,7 +150,7 @@ function iop_k8s_ingress() {
 
 # Optional egress gateway
 function iop_egress() {
-    iop istio-egress istio-egress $IBASE/istio-egress $*
+    iop istio-egress istio-egress $IBASE/gateways/istio-egress $*
 }
 
 # Install full istio1.1 in istio-system (using the new script and env)
@@ -441,13 +441,18 @@ function iop() {
     if [ "$1" == "-t" ]; then
         shift
         helm template --namespace $ns -n $rel $tmpl  $cfg $*
+    elif [ "$1" == "-d" ]; then
+        shift
+        kubectl delete --namespace $ns -n $rel $tmpl  $cfg $*
     elif [ "$IOP_MODE" == "helm" ] ; then
         echo helm upgrade --wait -i $n $cfg $*
         helm upgrade --namespace $ns --wait -i $rel $tmpl $cfg $*
     else
-        # Experiment with rel (may use different name)
+        # The 'release' tag is used to group related configs.
+        # Apply will make sure that any old config with the same tag that is no longer present will
+        # be removed. The release MUST be unique across cluster.
         kubectl create  ns $ns > /dev/null  2>&1
-        helm template --namespace $ns -n $rel $tmpl $cfg $* | kubectl apply -n $ns --prune -l release=$rel -f -
+        helm template --namespace $ns -n $ns-$rel $tmpl $cfg $* | kubectl apply -n $ns --prune -l release=$ns-$rel -f -
     fi
 }
 
