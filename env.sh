@@ -74,11 +74,11 @@ alias kii='kubectl -n istio-ingress'
 function iop_istio() {
 
     # Citadel must be in istio-system, where the secrets are stored.
-    iop istio-system istio-system-citadel $IBASE/istio-system  $*
+    iop istio-system istio-system-security $IBASE/istio-system-security  $*
 
     # Galley, Pilot and auto-inject in istio-control. Similar security risks.
     # Can be updated independently, each is optiona.
-    iop istio-control istio-config $IBASE/istio-config
+    iop istio-control istio-config $IBASE/istio-config --set configValidation=true
     iop istio-control istio-control $IBASE/istio-control
     iop istio-control istio-autoinject $IBASE/istio-autoinject --set enableNamespacesByDefault=true
 
@@ -107,7 +107,8 @@ function iop_master() {
        --set global.policyNamespace=istio-policy-master \
        $*
 
-    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-autoinject $IBASE/istio-autoinject
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-autoinject $IBASE/istio-autoinject \
+      --set global.istioNamespace=istio-master
 
     TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-telemetry-master istio-telemetry-master $IBASE/istio-telemetry \
         --set global.istioNamespace=istio-master \

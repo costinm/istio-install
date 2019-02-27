@@ -7,7 +7,7 @@ metadata:
   labels:
     release: {{ .Release.Name }}
 webhooks:
-{{- if .Values.global.configValidation }}
+{{- if .Values.configValidation }}
   - name: pilot.validation.istio.io
     clientConfig:
       service:
