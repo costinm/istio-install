@@ -10,6 +10,7 @@ metadata:
     {{- end }}
   labels:
     app: ingressgateway
+    release: {{ .Release.Name }}
 spec:
 {{- if .Values.loadBalancerIP }}
   loadBalancerIP: "{{ .Values.loadBalancerIP }}"

@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-policy
+    release: {{ .Release.Name }}
 spec:
   attributes:
     origin.ip:

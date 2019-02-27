@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
+    release: {{ .Release.Name }}
 spec:
   attributes:
     origin.ip:
@@ -129,6 +130,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
+    release: {{ .Release.Name }}
 spec:
   attributes:
     source.ip:
@@ -196,6 +198,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
+    release: {{ .Release.Name }}
 spec:
   compiledAdapter: stdio
   params:
@@ -209,6 +212,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
+    release: {{ .Release.Name }}
 spec:
   severity: '"Info"'
   timestamp: request.time
@@ -262,7 +266,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
-    heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
   severity: '"Info"'
@@ -303,8 +306,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
-    chart: istio-telemetry
-    heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
   match: context.protocol == "http" || context.protocol == "grpc"
@@ -320,8 +321,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
-    chart: istio-telemetry
-    heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
   match: context.protocol == "tcp"
@@ -338,8 +337,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
-    chart: istio-telemetry
-    heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
   value: "1"
@@ -372,8 +369,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
-    chart: istio-telemetry
-    heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
   value: response.duration | "0ms"
@@ -406,8 +401,6 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app: istio-telemetry
-    chart: istio-telemetry
-    heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
 spec:
   value: request.size | 0

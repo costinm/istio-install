@@ -4,6 +4,8 @@ kind: PodDisruptionBudget
 metadata:
   name: istio-ingress
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   {{- if .Values.podDisruptionBudget }}
   {{ include "podDisruptionBudget.spec" .Values.podDisruptionBudget }}

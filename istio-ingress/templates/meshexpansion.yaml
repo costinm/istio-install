@@ -4,6 +4,8 @@ kind: Gateway
 metadata:
   name: meshexpansion-gateway
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   selector:
     istio: ingressgateay
@@ -27,6 +29,8 @@ kind: VirtualService
 metadata:
   name: meshexpansion-vs-pilot1
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - istio-pilot.{{ .Values.global.istioNamespace }}.svc.cluster.local
@@ -54,6 +58,8 @@ kind: DestinationRule
 metadata:
   name: meshexpansion-dr-pilot9
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   host: istio-pilot.{{ .Release.Namespace }}.svc.cluster.local
   trafficPolicy:
@@ -70,6 +76,8 @@ kind: VirtualService
 metadata:
   name: meshexpansion-vs-citadel
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - istio-citadel.{{ $.Release.Namespace }}.svc.cluster.local

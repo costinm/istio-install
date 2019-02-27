@@ -3,6 +3,8 @@ kind: Sidecar
 metadata:
   name: default
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   egress:
     - hosts:

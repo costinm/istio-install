@@ -43,19 +43,18 @@ fi
 ISTIO_CONFIG=${ISTIO_CONFIG:-${IBASE}/user-values.yaml}
 
 # Default control plane for advanced installer.
-alias kis='kubectl -n istio-control'
+alias kis='kubectl -n istio-system'
+alias kic='kubectl -n istio-control'
 alias kii='kubectl -n istio-ingress'
 
 
 # The file contains examples of various setup commands I use on test clusters.
-#
+
+
 # The examples in this file will create a number of control plane profiles:
 #
 # istio-control - the main control plane, 1.1 based
-# istio-pilot11 - additional example control plane, 1.1 based, can be used for canary/testing without changing control
-#    (TODO: rename to istio-control-staging ?)
 # istio-master - based on master
-# istio-env11  - example with just sidecar injector ( for remote clusters not running full pilot for example )
 #
 # In addition, the istio-ingress and istio-ingress-insecure run their own dedicated pilot, which is needed for
 # k8s ingress support and is an example on how to segregate sidecar and gateway pilot (same config - but different replicas)
@@ -70,326 +69,218 @@ alias kii='kubectl -n istio-ingress'
 # istio-telemetry - used for all control planes except istio-master
 # istio-telemetry-master - example of separate telemetry server, using istio-master env and accessed by istio-ingress-master.
 
+
 # Typical installation, similar with istio normal install but using different namespaces/components.
-function iop_all() {
-    iop_system_citadel $*
-    iop_control $*
-    iop_ingress $*
-    iop_telemetry $*
-    iop_policy $*
+function iop_istio() {
+
+    # Citadel must be in istio-system, where the secrets are stored.
+    iop istio-system istio-system-citadel $IBASE/istio-system  $*
+
+    # Galley, Pilot and auto-inject in istio-control. Similar security risks.
+    # Can be updated independently, each is optiona.
+    iop istio-control istio-config $IBASE/istio-config
+    iop istio-control istio-control $IBASE/istio-control
+    iop istio-control istio-autoinject $IBASE/istio-autoinject --set enableNamespacesByDefault=true
+
+    iop istio-gateway istio-gateway $IBASE/istio-ingress
+
+    # Not converted yet to prune
+    IOP_MODE=helm iop istio-telemetry istio-telemetry $IBASE/istio-telemetry
+
+    iop istio-policy istio-policy $IBASE/istio-policy
 }
 
-# Install a test environment - you can use different TAG or settings.
-function iop_tst_env() {
-    # Control under istio-pilot11
-    iop_control11 $*
 
-    # Under istio-ingress-insecure, mtls off, not using certs.
-    iop_ingress_pilot_insecure $*
-    iop_ingress_insecure $*
-}
-
-# Install an istio_master env, control plane plus telemetry.
-# Uses system citadel.
-# Policy is disabled in this environment
+# Install a testing environment, based on istio_master
+# You can use this as a model to install other versions or flags.
+#
+# Note that 'istio-env=YOURENV' label or manual injection is needed.
+#
+# Uses shared (singleton) system citadel.
 function iop_master() {
-    TAG=master-latest-daily HUB=gcr.io/istio-release istioop istio-master $IBASE/istio-control \
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-config-master $IBASE/istio-config
+
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-control-master $IBASE/istio-control \
        --set policy.enable=false \
        --set global.istioNamespace=istio-master \
-       --set global.telemetryNamespace=istio-telemetry-master
+       --set global.telemetryNamespace=istio-telemetry-master \
+       --set global.policyNamespace=istio-policy-master \
+       $*
 
-    TAG=master-latest-daily HUB=gcr.io/istio-release istioop istio-telemetry-master $IBASE/istio-telemetry \
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-master istio-autoinject $IBASE/istio-autoinject
+
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-telemetry-master istio-telemetry-master $IBASE/istio-telemetry \
         --set global.istioNamespace=istio-master \
         $*
 
-    # Gateway for master - no ingress support (will be dropped)
-    TAG=master-latest-daily HUB=gcr.io/istio-release istioop istio-gateway-master $IBASE/istio-ingress \
+    TAG=master-latest-daily HUB=gcr.io/istio-release iop istio-gateway-master istio-gateway-master $IBASE/istio-ingress \
         --set global.istioNamespace=istio-master \
         $*
 
 }
 
-# Can run side-by-side with istio 1.0 or 1.1 - just runs citadel.
-#
-# Optional:
-# - insecure mode set ( not implemented yet in this repo)
-# - alternative cert provisioning is used (node agent, etc) exposing SDS interface
-# - Secrets with expected names must be created manually or by some automation tools. (TODO: document requirements)
-#
-# CRITICAL: before installing a control plane profile, make sure you upgrade citadel settings
-# Galley and injector depend on DNS-based certs.
-function iop_system_citadel() {
-    NAMESPACE=istio-system istioop istio-system-citadel $IBASE/istio-system  $*
-}
 
-
-# Default control plane under istio-control
-# This also acts as ingress controller, using default istio-ingress
-function iop_control() {
-    istioop istio-control $IBASE/istio-control
-}
-
-# Ingress 1.1 in istio-ingress namespace, with k8s ingress and dedicated pilot
-# istio-system may have a second ingress.
-function iop_ingress() {
-    # Normal 1.1 ingress. Defaults to istio-control control plane.
-    istioop istio-ingress $IBASE/istio-ingress \
-        --set global.istioNamespace=istio-control \
-        $*
-}
-
-# Example for an Ingress that supports legacy K8S Ingress. Uses a dedicated pilot.
+# Example for a minimal install, with an Ingress that supports legacy K8S Ingress and a dedicated pilot.
 function iop_k8s_ingress() {
-    istioop istio-ingress $IBASE/istio-ingress \
+
+    # No MCP or injector - dedicated for the gateway ( perf and scale characteristics are different from main pilot,
+    # and we may want custom settings anyways )
+    iop istio-ingress istio-ingress-pilot $IBASE/istio-control \
+         --set ingress.ingressControllerMode=DEFAULT \
+         --set env.K8S_INGRESS_NS=istio-ingress \
+         --set global.controlPlaneSecurityEnabled=false \
+         --set global.mtls.enabled=false \
+         --set policy.enabled=false \
+         --set useMCP=false
+          $*
+
+    # If installing a second ingress, please set "--set ingress.ingressControllerMode=STRICT" or bad things will happen.
+     # Also --set ingress.ingressClass=istio-...
+
+     # As an example and to test, ingress is installed using Tiller.
+    IOP_MODE=helm iop istio-ingress istio-ingress $IBASE/istio-ingress \
         --set k8sIngress=true \
+        --set global.controlPlaneSecurityEnabled=false \
         --set global.istioNamespace=istio-ingress \
         $*
 
-    # No MCP or injector - dedicated for the gateway ( perf and scale characteristics are different from main pilot,
-    # and we may want custom settings anyways )
-    NAMESPACE=istio-ingress istioop istio-ingress-pilot $IBASE/istio-control \
-         --set ingress.ingressControllerMode=DEFAULT \
-         --set pilot.env.K8S_INGRESS_NS=istio-ingress \
-         --set pilot.useMCP=false \
-         --set sidecarInjectorWebhook.enabled=false \
-         --set galley.enabled=false \
-          $*
 }
 
 
-# Verify we can install a second ingress.
-# This must be in STRTICT mode to avoid conflicts
-function iop_ingress_insecure() {
-    # TODO: customize test domains for each ingress namespace (move to separate function )
-
-    # Normal 1.1 ingress. Defaults to istio-control control plane.
-    istioop istio-ingress-insecure $IBASE/istio-ingress \
-        --set k8sIngress=true \
-        --set global.controlPlaneSecurityEnabled=false \
-        --set global.istioNamespace=istio-ingress-insecure \
-        $*
-}
-
-function iop_ingress_pilot_insecure() {
-    # TODO: customize test domains for each ingress namespace (move to separate function )
-
-    # Same namespace pilot, with ingress controller activated
-    # No MCP or injector - dedicated for the gateway ( perf and scale characteristics are different from main pilot,
-    # and we may want custom settings anyways )
-    # Policy disabled by default ( insecure anyways ), can be enabled for tests.
-    NAMESPACE=istio-ingress-insecure istioop istio-ingress-insecure-pilot $IBASE/istio-control \
-         --set ingress.ingressControllerMode=STRICT \
-         --set pilot.env.K8S_INGRESS_NS=istio-ingress-insecure \
-         --set pilot.useMCP=false \
-         --set sidecarInjectorWebhook.enabled=false \
-         --set galley.enabled=false \
-         --set global.controlPlaneSecurityEnabled=false \
-         --set global.mtls.enabled=false \
-         --set pilot.policy.enabled=false \
-         --set ingress.ingressClass=istio-insecure \
-         --set global.meshExpansion.enabled=false \
-          $*
-
-}
-
-# Standalone ingress. Uses istio-system pilot (bookinfo-style 1.0 or 1.1).
-function iop_ingress_system() {
-    istioop istio-ingress-system $IBASE/istio-ingress \
-        --set domain=wis.istio.webinf.info \
-        --set global.istioNamespace=istio-system \
-        $*
-    kubectl --namespace istio-ingress-system get svc -o wide
-}
-
-# Standalone ingress. Uses istio-pilot11 pilot.
-function iop_ingress_11() {
-    istioop istio-ingress11 $IBASE/istio-ingress \
-        --set domain=w11.istio.webinf.info \
-        --set global.istioNamespace=istio-pilot11 \
-        $*
-
-    kubectl --namespace istio-ingress11 get svc -o wide
-
-}
-
-# Egress gateway
+# Optional egress gateway
 function iop_egress() {
-    istioop istio-egress $IBASE/istio-egress --set zvpn.suffix=v10.webinf.info $*
+    iop istio-egress istio-egress $IBASE/istio-egress $*
 }
 
-
-# Install full istio1.1 in istio-system
+# Install full istio1.1 in istio-system (using the new script and env)
 function iop_istio11_istio_system() {
-    istioop istio-system $TOP/src/istio.io/istio/install/kubernetes/helm/istio  $*
-}
-
-
-# Pilot-10 profile. Standalone pilot and istio-1.0.
-# Old - may still work but not supported, only 1.1+
-#function iop_control10() {
-#    istioop istio-pilot10 $IBASE/istio-control --set global.istio10=true --set global.tag=release-1.0-latest-daily $*
-#}
-
-# Second test control plane under istio-pilot11
-function iop_control11() {
-    istioop istio-pilot11 $IBASE/istio-control $*
-}
-
-function iop_telemetry() {
-    istioop  istio-telemetry $IBASE/istio-telemetry $*
-}
-
-function iop_policy() {
-    istioop  istio-policy $IBASE/istio-policy $*
-}
-
-# Install just node agent, in istio-system - a-la-carte.
-# Node agent will run, but default config for istio-system will not use it until it is updated.
-# It should be possible to opt-in !
-function iop_nodeagent() {
-
-    # env.CA_PROVIDER
-    # env.CA_ADDR
-
-
-    NAMESPACE=istio-system istioop nodeagent $IBASE/istio-system/charts/nodeagent
+    iop istio-system istio-system $TOP/src/istio.io/istio/install/kubernetes/helm/istio $*
 }
 
 # Install just CNI, in istio-system
 # TODO: verify it ignores auto-installed, opt-in possible
 function iop_cni() {
-    NAMESPACE=istio-system istioop cni $IBASE/istio-system/charts/istio-cni
+    iop istio-system cni $IBASE/optional/istio-cni
 }
 
+# Install a load generating namespace
 function iop_load() {
-    kubectl create ns load
-    kubectl label namespace load istio-env=istio-control
-
-    istioop load $IBASE/test/pilotload $*
+    iop load load $IBASE/test/pilotload $*
 }
 
 
-# Kubernetes log wrapper
-function _klog() {
-    local label=$1
-    local container=${2:-istio-proxy}
-    local ns=${3:-istio-system}
-    echo kubectl --namespace=$ns log $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') $container
-    kubectl --namespace=$ns log $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') $container $4
+# Helper - kubernetes log wrapper
+#
+# Params:
+# - namespace
+# - label ( typically app=NAME or release=NAME)
+# - container - defaults to istio-proxy
+#
+function klog() {
+    local ns=${1}
+    local label=${2}
+    local container=${3}
+    shift; shift; shift
+
+    kubectl --namespace=$ns log $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') $container $*
 }
 
 # Kubernetes exec wrapper
+# - namespace
 # - label (app=fortio)
 # - container (istio-proxy)
-# - namespace
-function _kexec() {
-    local label=$1
-    local container=${2:-istio-proxy}
-    local ns=${3:-istio-system}
+function kexec() {
+    local ns=$1
+    local label=$2
+    local container=$3
     shift; shift; shift
-    local cmd=${*:-/bin/bash}
-    kubectl --namespace=$ns exec -it $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') -c $container -- $cmd
+
+    kubectl --namespace=$ns exec -it $(kubectl --namespace=$ns get -l $label pod -o=jsonpath='{.items[0].metadata.name}') -c $container -- $*
 }
 
+# Forward port - Namespace, label, PortLocal, PortRemote
+# Example:
+#  kfwd istio-control istio=pilot istio-ingress 4444 8080
+function kfwd() {
+    local NS=$1
+    local L=$2
+    local PL=$3
+    local PR=$4
+
+    local N=$NS-$L
+    if [[ -f ${LOG_DIR:-/tmp}/fwd-$N.pid ]] ; then
+        kill -9 $(cat $LOG_DIR/fwd-$N.pid)
+    fi
+    kubectl --namespace=$NS port-forward $(kubectl --namespace=$NS get -l $L pod -o=jsonpath='{.items[0].metadata.name}') $PL:$PR &
+    echo $! > $LOG_DIR/fwd-$N.pid
+}
+
+function logs-gateway() {
+    istioctl proxy-status -i istio-control
+    klog istio-gateway app=ingressgateway istio-proxy $*
+}
+
+function exec-gateway() {
+    kexec istio-gateway app=ingressgateway istio-proxy  $*
+}
 function logs-ingress() {
     istioctl proxy-status -i istio-control
-    _klog app=ingressgateway istio-proxy istio-ingress $*
+    klog istio-ingress app=ingressgateway istio-proxy $*
 }
-
 function exec-ingress() {
-    istioctl proxy-status -i istio-control
-    _kexec app=ingressgateway istio-proxy istio-ingress $*
+    kexec istio-ingress app=ingressgateway istio-proxy  $*
 }
 
 function logs-inject() {
-    _klog istio=sidecar-injector sidecar-injector-webhook istio-env11 $*
+    klog istio-control istio=sidecar-injector sidecar-injector-webhook $*
 }
 
-function logs-inject11() {
-    _klog istio=sidecar-injector sidecar-injector-webhook istio-pilot11 $*
+function logs-inject-master() {
+    klog istio-master istio=sidecar-injector sidecar-injector-webhook $*
 }
 
 function logs-pilot() {
-    _klog istio=pilot discovery ${NS:-istio-control} $*
+    klog istio-control istio=pilot discovery  $*
 }
 
-function exec-pilot11() {
-    _kexec istio=pilot discovery ${NS:-istio-control}  $*
-}
-
-function logs-fortio11() {
-    _klog app=fortiotls istio-proxy fortio11 $*
-}
-
-function exec-fortio11() {
-    _kexec app=fortiotls istio-proxy fortio11 $*
-}
-
-function exec-fortio11-cli() {
-    _kexec app=cli-fortio-tls app fortio11 $*
+function logs-fortio() {
+    klog fortio11 app=fortiotls istio-proxy $*
 }
 
 function exec-fortio11-cli-proxy() {
     # curl -v  -k  --key /etc/certs/key.pem --cert /etc/certs/cert-chain.pem https://fortiotls:8080
-    _kexec app=cli-fortio-tls istio-proxy fortio11 $*
-}
-
-function logs-fortio11-cli() {
-    _klog app=cli-fortio-tls istio-proxy fortio11 $*
-}
-
-function iop_test_apps_prepare() {
-    #helm install -n fortio11 --namespace fortio11 helm/fortio
-    #kubectl -n test apply -f samples/httpbin/httpbin.yaml
-    #kubectl -n bookinfo apply -f samples/bookinfo/kube/bookinfo.yaml
-
-
-    kubectl create ns httpbin
-    kubectl label ns httpbin istio-env=istio-control
-
-    kubectl create ns bookinfo
-    kubectl label ns bookinfo istio-env=istio-control
-
-    kubectl create ns fortio-control
-    kubectl label ns fortio-control istio-env=istio-control
-
-    kubectl create ns none
-    kubectl label ns none istio-env=istio-control
-
-
-    kubectl create ns cassandra
-    kubectl label ns cassandra istio-env=istio-control
-
+    kexec fortio11 app=cli-fortio-tls istio-proxy $*
 }
 
 function iop_test_apps() {
-    kubectl -n httpbin apply -f test/k8s/httpbin.yaml
-    kubectl -n cassandra apply -f test/cassandra
 
-    istioop fortio-control $IBASE/test/fortio --set domain=$DOMAIN $*
-    istioop none $IBASE/test/none $*
-}
+    iop fortio-control fortio-control $IBASE/test/fortio --set domain=$DOMAIN $*
 
-function iop_testns() {
+    kubectl create ns fortio-nolabel
+    iop fortio-nolabel fortio-nolabel $IBASE/test/fortio --set domain=$DOMAIN $*
+
+
+    iop none none $IBASE/test/none $*
+
     # Using istio-system (can be pilot10 or pilot11) annotation
     kubectl create ns test
-    kubectl label namespace test istio-injection=enabled
+    kubectl label namespace test istio-env=istio-control --overwrite
+    # Not yet annotated, prune will fail
+    IOP_MODE=helm iop test test test/test
+
 
     kubectl create ns bookinfo
-    kubectl create ns bookinfo
-    kubectl label namespace bookinfo istio-injection=enabled
+    kubectl label namespace bookinfo istio-env=istio-control --overwrite
+    kubectl -n bookinfo apply -f $TOP/src/istio.io/samples/bookinfo/kube/bookinfo.yaml
+
+    kubectl create ns bookinfo-master
+    kubectl label namespace bookinfo-master istio-env=istio-master --overwrite
     kubectl -n bookinfo apply -f $TOP/src/istio.io/samples/bookinfo/kube/bookinfo.yaml
 
     kubectl create ns httpbin
-    kubectl label namespace httpbin istio-injection=enabled
     kubectl -n httpbin apply -f $TOP/src/istio.io/samples/httpbin/httpbin.yaml
 
-    # Using custom profile for injection.
-    kubectl create ns fortio11
-    kubectl label ns fortio11 istio-env=istio-sidecarinjector11
-
-    kubectl create ns fortio10
-    kubectl label ns fortio10 istio-env=istio-sidecarinjector10
+    #kubectl -n cassandra apply -f test/cassandra
 }
 
 # Prepare GKE for Lego DNS. You must have a domain, $DNS_PROJECT
@@ -449,22 +340,6 @@ function testCreateDNS() {
 }
 
 
-# Forward port - Label, Namespace, PortLocal, PortRemote
-# Example:
-#  istio-fwd istio=pilot istio-ingress 4444 8080
-function istio-fwd() {
-    local L=$1
-    local NS=$2
-    local PL=$3
-    local PR=$4
-
-    local N=$NS-$L
-    if [[ -f ${LOG_DIR:-/tmp}/fwd-$N.pid ]] ; then
-        kill -9 $(cat $LOG_DIR/fwd-$N.pid)
-    fi
-    kubectl --namespace=$NS port-forward $(kubectl --namespace=$NS get -l $L pod -o=jsonpath='{.items[0].metadata.name}') $PL:$PR &
-    echo $! > $LOG_DIR/fwd-$N.pid
-}
 
 function istio-restart() {
     local L=${1:-app=pilot}
@@ -479,26 +354,8 @@ function localPilot() {
     pilot-discovery discovery \
         --kubeconfig $KUBECONIG \
         --meshConfig test/local/mesh.yaml \
-        --networksConfig test/local/meshNetworks.yaml \
+        --networksConfig test/local/meshNetworks.yaml
 
-    # TODO:
-    #
-
-    # Untested flags: --domain, -a (oneNamespace)
-    # --namespace - ???
-    # --plugiins=
-    #
-
-    # Defaults:
-    # secureGrpcAddr :15011
-    # meshConfig /etc/istio/config/mesh
-    # networksConfig /etc/istio/config/meshNetworks
-
-    # To deprecate:
-    # --mcpServerAddrs mcps://istio-galley:9901 -> MeshConfig.ConfigSources.Address
-    # -registries
-    # -clusterRegistriesNamespace
-    #
 }
 
 # Fetch the certs from a namespace, save to /etc/cert
@@ -518,40 +375,52 @@ function getCA() {
     kubectl get secret istio-ca-secret -n istio-system -o "jsonpath={.data['ca-key\.pem']}" | base64 -d > /etc/certs/ca-key.pem
 }
 
-function istio_status11() {
-    echo "1.0 sidecars"
-    istioctl -i istio-pilot10 proxy-status
-    echo "1.1 sidecars"
-    istioctl -i istio-pilot11 proxy-status
+function istio_status() {
+    echo "=== 1.1"
+    istioctl -i istio-control proxy-status
+    echo "=== master"
+    istioctl -i istio-master proxy-status
+    echo "=== micro-ingress"
+    istioctl -i istio-ingress proxy-status
 }
 
-function istio_ingress() {
-
-    istioctl -i istio-ingress proxy-config routes -o json $(istioctl -i istio-ingress proxy-status | grep ingressgateway | cut -d' ' -f 1)
-}
-# Run install or update istio components. This will be replaced with a real program, for now basic scripting around
-# helm.
+# Get config
 #
-# CLI params
-# 1. name of the deloyed component, acts as default namespace unless NAMESPACE is set.
-# 2. chart_directory
-# 3. any other options
+# - cmd (routes, listeners, endpoints, clusters)
+# - deployment (ex. ingressgateway)
 #
-# Environment variables:
-# - HELM_INSTALL=1: do an install instead of the default 'update'
-# - HELM_DELETE=1: do a delete/purge instead of the default 'update'
-# - TEMPLATE=1: just show the template
-# - KUBEAPPLY - will do a kube apply
-
-# - NAMESPACE - namespace where the component is installed, defaults to name of component
-# - ISTIO_ENV - istio environment for auto-injection (defaults to istio-control)
-#
-# Env: HUB
-# You can specify --set global.tag=$TAG to override the chart's default.
-function istioop() {
-    local n=$1
+# Env: ISTIO_ENV = which pilot to use ( istio-control, istio-master, istio-ingress, ...)
+function istio_cfg() {
+    local env=${ISTIO_ENV:-istio-control}
+    local cmd=$1
     shift
-    local ns=${NAMESPACE:-$n}
+    local dep=$1
+    shift
+
+
+    istioctl -i $env proxy-config $cmd $(istioctl -i $env proxy-status | grep $dep | cut -d' ' -f 1) $*
+}
+
+
+# Helper to upgrade or install
+#
+# Params:
+# - namespace
+# - release name (helm and kubectl)
+# - config template dir
+# - [-t] - show template
+#
+# Env: IOP_MODE=helm - use helm instead of kubectl
+# Defaults to kubectl apply --prune
+#
+# Namespace will be labeled with the value of ISTIO_ENV (default to istio-control)
+function iop() {
+    local ns=$1
+    shift
+    local rel=$1
+    shift
+    local tmpl=$1
+    shift
 
     # Defaults
     local cfg="-f $IBASE/global.yaml"
@@ -561,11 +430,6 @@ function istioop() {
         cfg="$cfg -f $HOME/.istio-values.yaml"
     fi
 
-    # File overrides
-    if [ -f $ISTIO_CONFIG ]; then
-        cfg="$cfg -f $ISTIO_CONFIG"
-    fi
-
     if [ "$HUB" != "" ] ; then
         cfg="$cfg --set global.hub=$HUB"
     fi
@@ -573,23 +437,16 @@ function istioop() {
         cfg="$cfg --set global.tag=$TAG"
     fi
 
-    if [ "$TEMPLATE" == "1" ] ; then
-        helm template --namespace $ns -n $n $cfg  $*
-    elif [ "$HELMINSTALL" == "1" ] ; then
-        echo helm install --namespace $ns -n $n $cfg  $*
-        helm install --namespace $ns -n $n $cfg $*
-    elif [ "$HELMDELETE" == "1" ] ; then
-        helm delete --purge $n
-    elif [ "$KUBEAPPLY" == "1" ] ; then
-        # Experiment with rel (may use different name)
-        kubectl create  ns $ns > /dev/null
-        kubectl label namespace $ns istio-env=${ISTIO_ENV:-istio-control} --overwrite
-        helm template --namespace $ns -n $n $cfg $* | kubectl apply -n $ns --prune -l release=$n -f -
-     elif [ "$HELM" == "1" ] ; then
+    if [ "$1" == "-t" ]; then
+        shift
+        helm template --namespace $ns -n $rel $tmpl  $cfg $*
+    elif [ "$IOP_MODE" == "helm" ] ; then
         echo helm upgrade --wait -i $n $cfg $*
-        helm upgrade --wait -i  $n $* $cfg
+        helm upgrade --namespace $ns --wait -i $rel $tmpl $cfg $*
     else
-        echo "Must set an environment variable indicating the install type: KUBEAPPLY=1 HELM=1 TEMPLATE=1"
-        echo "For helm, HELMDELETE=1 and HELMINSTALL=1 need to be set if the operation is initial install or delete"
+        # Experiment with rel (may use different name)
+        kubectl create  ns $ns > /dev/null  2>&1
+        helm template --namespace $ns -n $rel $tmpl $cfg $* | kubectl apply -n $ns --prune -l release=$rel -f -
     fi
 }
+

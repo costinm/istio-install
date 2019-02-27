@@ -1,12 +1,13 @@
 apiVersion: v1
-name: pilot
+name: istio-autoinject
 version: 1.1.0
 appVersion: 1.1.0
 tillerVersion: ">=2.7.2"
-description: Helm chart for pilot deployment
+description: Helm chart for sidecar injector webhook deployment
 keywords:
   - istio
-  - pilot
+  - sidecarInjectorWebhook
+  - autoinject
 sources:
   - http://github.com/istio/istio
 engine: gotpl

@@ -4,6 +4,7 @@ metadata:
   name: istio-citadel11-{{ .Release.Namespace }}
   labels:
     app: citadel
+    release: {{ .Release.Name }}
 rules:
 - apiGroups: [""]
   resources: ["secrets"]

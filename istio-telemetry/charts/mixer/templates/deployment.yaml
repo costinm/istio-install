@@ -6,6 +6,7 @@ metadata:
   labels:
     app: istio-telemetry
     istio: mixer
+    release: {{ .Release.Name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   strategy:
@@ -51,14 +52,14 @@ spec:
 {{- end }}
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         ports:
-        - containerPort: 9093
+        - containerPort: 15014
         - containerPort: 42422
         args:
           - --address
           - unix:///sock/mixer.socket
 {{- if .Values.global.useMCP }}
     {{- if .Values.global.controlPlaneSecurityEnabled}}
-          - --configStoreURL=mcps://istio-galley.{{ .Values.global.istioNamespace }}.svc:9901
+          - --configStoreURL=mcps://istio-galley.{{ .Values.global.istioNamespace }}.svc:15019
           - --certFile=/etc/certs/cert-chain.pem
           - --keyFile=/etc/certs/key.pem
           - --caCertFile=/etc/certs/root-cert.pem
@@ -98,7 +99,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /version
-            port: 9093
+            port: 15014
           initialDelaySeconds: 5
           periodSeconds: 5
       - name: istio-proxy

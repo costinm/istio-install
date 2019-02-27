@@ -4,6 +4,7 @@ metadata:
   name: istio-policy-admin-role-binding-{{ .Release.Namespace }}
   labels:
     app: istio-policy
+    release: {{ .Release.Name }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

@@ -8,6 +8,8 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: istio-cni
+  labels:
+    release: {{ .Release.Name }}
 rules:
   - apiGroups: [""]
     resources:
@@ -22,6 +24,8 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   name: istio-cni
+  labels:
+    release: {{ .Release.Name }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -40,6 +44,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- template "common_labels" . }}
+    release: {{ .Release.Name }}
 data:
   # The CNI network configuration to add to the plugin chain on each node.  The special
   # values in this config will be automatically populated.
@@ -66,6 +71,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     k8s-app: istio-cni-node
+    release: {{ .Release.Name }}
     {{- template "common_labels" . }}
 spec:
   selector:
@@ -141,3 +147,5 @@ kind: ServiceAccount
 metadata:
   name: istio-cni
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}

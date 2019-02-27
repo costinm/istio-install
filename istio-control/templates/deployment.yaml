@@ -53,22 +53,15 @@ spec:
           - "-a"
           - {{ .Release.Namespace }}
 {{- end }}
-{{- if .Values.global.controlPlaneSecurityEnabled}}
-    {{- if not .Values.sidecar }}
-          - --secureGrpcAddr
-          - ":15011"
-    {{- end }}
-{{- else }}
+{{- if .Values.useMCP }}
+{{- if .Values.global.controlPlaneSecurityEnabled }}
+          - --mcpServerAddrs=mcp://127.0.0.1:15019
+  {{ else }}
+          - --mcpServerAddrs=mcp://istio-galley
+{{- end }}
+{{- end }}
           - --secureGrpcAddr
           - ""
-{{- end }}
-{{- if .Values.useMCP }}
-    {{- if .Values.global.controlPlaneSecurityEnabled}}
-          - --mcpServerAddrs=mcps://istio-galley.{{ $.Release.Namespace }}.svc:9901
-    {{- else }}
-          - --mcpServerAddrs=mcp://istio-galley.{{ $.Release.Namespace }}.svc:9901
-    {{- end }}
-{{- end }}
 {{- if .Values.global.trustDomain }}
           - --trust-domain={{ .Values.global.trustDomain }}
 {{- end }}
@@ -116,14 +109,10 @@ spec:
           - name: config-volume
             mountPath: /etc/istio/config
 
-{{- if .Values.global.controlPlaneSecurityEnabled}}
-          - name: istio-certs
-            mountPath: /etc/certs
-            readOnly: true
-{{- end }}
 
        ### Sidercar - should only be used if MTLS is enabled.
-{{- if .Values.sidecar }}
+{{- if .Values.global.controlPlaneSecurityEnabled }}
+
         - name: istio-proxy
 {{- if contains "/" .Values.global.proxy.image }}
           image: "{{ .Values.global.proxy.image }}"
@@ -132,30 +121,17 @@ spec:
 {{- end }}
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           ports:
-          - containerPort: 15003
-          - containerPort: 15005
-          - containerPort: 15007
           - containerPort: 15011
           args:
           - proxy
-{{- if .Values.global.proxy.proxyDomain }}
-          - --domain
-          - {{ .Values.global.proxy.proxyDomain }}
-{{- end }}
           - --serviceCluster
           - istio-pilot
           - --templateFile
-          - /etc/istio/proxy/envoy_pilot.yaml.tmpl
-        {{- if $.Values.global.controlPlaneSecurityEnabled}}
-          - --controlPlaneAuthPolicy
-          - MUTUAL_TLS
-        {{- else }}
+          - /var/lib/envoy/envoy.yaml.tmpl
           - --controlPlaneAuthPolicy
           - NONE
-        {{- end }}
-        {{- if .Values.global.trustDomain }}
-          - --trust-domain={{ .Values.global.trustDomain }}
-        {{- end }}
+          - --proxyLogLevel
+          - DEBUG
           env:
           - name: POD_NAME
             valueFrom:
@@ -182,6 +158,8 @@ spec:
           - name: istio-certs
             mountPath: /etc/certs
             readOnly: true
+          - name: envoy-config
+            mountPath: /var/lib/envoy
 {{- end }}
 
 
@@ -190,6 +168,9 @@ spec:
         configMap:
           name: istio
 {{- if .Values.global.controlPlaneSecurityEnabled}}
+      - name: envoy-config
+        configMap:
+          name: envoy-config
       - name: istio-certs
         secret:
           secretName: istio.istio-pilot-service-account

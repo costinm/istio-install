@@ -16,7 +16,6 @@ data:
 {{ toYaml .Values | indent 4 }}
 
   mesh: |-
-
     {{- if .Values.global.enableTracing }}
     # Set enableTracing to false to disable request tracing.
     enableTracing: {{ .Values.global.enableTracing }}

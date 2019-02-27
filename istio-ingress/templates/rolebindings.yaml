@@ -4,6 +4,8 @@ kind: RoleBinding
 metadata:
   name: ingress-sds
   namespace: {{ $.Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role

@@ -6,6 +6,7 @@ metadata:
   labels:
     app: istio-policy
     istio: mixer
+    release: {{ .Release.Name }}
 spec:
   ports:
   - name: grpc-mixer

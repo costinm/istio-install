@@ -2,12 +2,10 @@
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
-  name: istio-galley
+  name: istio-galley-{{ .Release.Namespace }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: galley
     release: {{ .Release.Name }}
-    istio: galley
 webhooks:
 {{- if .Values.global.configValidation }}
   - name: pilot.validation.istio.io
@@ -90,7 +88,6 @@ webhooks:
         - opas
         - prometheuses
         - rbacs
-        - servicecontrols
         - solarwindses
         - stackdrivers
         - cloudwatches
@@ -106,7 +103,6 @@ webhooks:
         - metrics
         - quotas
         - reportnothings
-        - servicecontrolreports
         - tracespans
     failurePolicy: Fail
 {{- end }}

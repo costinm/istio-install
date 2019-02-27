@@ -3,6 +3,7 @@ kind: ClusterRole
 metadata:
   name: istio-policy
   labels:
+    release: {{ .Release.Name }}
     app: istio-policy
 rules:
 - apiGroups: ["config.istio.io"] # istio CRD watcher

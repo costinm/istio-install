@@ -4,6 +4,8 @@ kind: Role
 metadata:
   name: ingress-sds
   namespace: {{ $.Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 rules:
 - apiGroups: [""]
   resources: ["secrets"]

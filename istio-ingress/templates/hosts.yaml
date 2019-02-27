@@ -8,6 +8,8 @@ kind: VirtualService
 metadata:
   name: {{ $app.name }}
   namespace: {{ $.Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - "{{ $app.name }}.{{ $.Values.domain }}"
@@ -28,6 +30,8 @@ kind: VirtualService
 metadata:
   name: {{ $app.name }}
   namespace: {{ $.Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   hosts:
   - "*"

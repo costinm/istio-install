@@ -23,3 +23,5 @@ security:
 
     istio-galley-service-account.istio-master: istio-galley.istio-master.svc
 
+    istio-galley-service-account.istio-config: istio-galley.istio-config.svc
+

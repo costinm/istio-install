@@ -4,6 +4,8 @@ kind: Gateway
 metadata:
   name: ingressgateway
   namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
 spec:
   selector:
     istio: ingressgateway

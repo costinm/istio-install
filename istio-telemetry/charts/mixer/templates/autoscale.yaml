@@ -5,6 +5,7 @@ metadata:
   name: istio-telemetry
   namespace: {{ .Release.Namespace }}
   labels:
+    release: {{ .Release.Name }}
     app: istio-telemetry
 spec:
     maxReplicas: {{ .Values.autoscaleMax }}
